@@ -1,0 +1,14 @@
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+  margin: 0;
+  background: #000000;
+  font-family: monospace;
+  color: white;
+}
