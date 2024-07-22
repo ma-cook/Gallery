@@ -23,6 +23,19 @@ function Loader() {
   return <Html center>{progress} % loaded</Html>;
 }
 
+function WhitePlane() {
+  // Plane size can be adjusted by changing these values
+  const planeWidth = 200;
+  const planeHeight = 200;
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -4, 0]} receiveShadow>
+      <planeGeometry attach="geometry" args={[planeWidth, planeHeight]} />
+      <meshStandardMaterial attach="material" color="white" />
+    </mesh>
+  );
+}
+
 function ImagePlane({ url, position }) {
   const texture = useLoader(TextureLoader, url);
   const meshRef = useRef();
@@ -53,7 +66,7 @@ function ImagePlane({ url, position }) {
   // If you have a specific logic to determine the plane size based on the viewport size or other factors, you can adjust it here
 
   return (
-    <mesh position={position} ref={meshRef}>
+    <mesh position={position} ref={meshRef} castShadow>
       <planeGeometry attach="geometry" args={[planeWidth, planeHeight]} />
       <meshBasicMaterial
         attach="material"
@@ -123,11 +136,15 @@ function App() {
           Upload Image
         </button>
       </div>
-      <Canvas>
+      <Canvas
+        shadows
+        shadowMap={{ type: THREE.PCFSoftShadowMap }}
+        style={{ background: 'white' }}
+      >
+        <fog attach="fog" args={['#8888', 0, 25]} />
         <Suspense fallback={<Loader />}>
-          <Stats />
-          <ambientLight />
           <CustomCamera />
+          <pointLight position={[0, 6, 0]} intensity={10} castShadow />
           {images.map((url, index) => (
             <ImagePlane
               key={index}
@@ -135,6 +152,7 @@ function App() {
               position={imagesPositions[index]}
             />
           ))}
+          <WhitePlane />
         </Suspense>
       </Canvas>
     </div>
