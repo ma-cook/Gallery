@@ -21,3 +21,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GALLERY_1EDE7 }}
           channelId: live
           projectId: gallery-1ede7
+          entryPoint: Client/
