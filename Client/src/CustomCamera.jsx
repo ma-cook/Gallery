@@ -13,6 +13,7 @@ const CustomCamera = () => {
       near={0.1}
       far={5000}
       position={[100, 100, 100]}
+      aspect={[window.innerWidth / window.innerHeight]}
     >
       <OrbitControls
         enableZoom={true}
