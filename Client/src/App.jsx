@@ -6,26 +6,15 @@ import React, {
   useState,
   Suspense,
 } from 'react';
-import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
-import { initializeApp } from 'firebase/app';
+import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { TextureLoader } from 'three';
+import * as THREE from 'three';
 import {
   getAuth,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
 } from 'firebase/auth';
-import * as THREE from 'three';
-
-import {
-  Stats,
-  useProgress,
-  Html,
-  Outlines,
-  SoftShadows,
-} from '@react-three/drei';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
 import { db, storage } from './firebase';
 import CustomCamera from './CustomCamera';
@@ -188,6 +177,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [layout, setLayout] = useState('sphere'); // State for layout
+  const [interpolationFactor, setInterpolationFactor] = useState(0); // State for interpolation
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -259,10 +249,32 @@ function App() {
   }, [images]);
 
   const imagesPositions = useMemo(() => {
-    return layout === 'sphere'
-      ? calculateSpherePositions()
-      : calculatePlanePositions();
-  }, [layout, calculateSpherePositions, calculatePlanePositions]);
+    const spherePositions = calculateSpherePositions();
+    const planePositions = calculatePlanePositions();
+    return images.map((_, index) => {
+      const spherePos = new THREE.Vector3(...spherePositions[index]);
+      const planePos = new THREE.Vector3(...planePositions[index]);
+      return spherePos.lerp(planePos, interpolationFactor).toArray();
+    });
+  }, [interpolationFactor, calculateSpherePositions, calculatePlanePositions]);
+
+  const triggerTransition = (targetLayout) => {
+    setLayout(targetLayout);
+    let start = null;
+    const duration = 1000; // 1 second
+
+    const animate = (timestamp) => {
+      if (!start) start = timestamp;
+      const elapsed = timestamp - start;
+      const factor = Math.min(elapsed / duration, 1);
+      setInterpolationFactor(targetLayout === 'sphere' ? 1 - factor : factor);
+      if (elapsed < duration) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  };
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -283,8 +295,10 @@ function App() {
         >
           Upload Image
         </button>
-        <button onClick={() => setLayout('sphere')}>Sphere Layout</button>
-        <button onClick={() => setLayout('plane')}>Plane Layout</button>
+        <button onClick={() => triggerTransition('sphere')}>
+          Sphere Layout
+        </button>
+        <button onClick={() => triggerTransition('plane')}>Plane Layout</button>
       </div>
       <AuthModal
         isOpen={isAuthModalOpen}
