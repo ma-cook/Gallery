@@ -17,7 +17,8 @@ import { db } from './firebase';
 import CustomCamera from './CustomCamera';
 import { useProgress, Html } from '@react-three/drei';
 import AuthModal from './AuthModal';
-import { signInUser, signOutUser } from './Auth'; // Import the refactored functions
+import { signInUser, signOutUser } from './Auth';
+import ImagePlane from './ImagePlane';
 
 const auth = getAuth();
 
@@ -38,74 +39,13 @@ function WhitePlane() {
   );
 }
 
-function ImagePlane({ url, position }) {
-  const texture = useLoader(TextureLoader, url);
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.flipY = false;
-  const meshRef = useRef();
-  const [boxDimensions, setBoxDimensions] = useState([1, 1]);
-
-  useEffect(() => {
-    if (
-      texture.image &&
-      texture.image.naturalWidth &&
-      texture.image.naturalHeight
-    ) {
-      const maxWidth = 5;
-      const aspectRatio =
-        texture.image.naturalWidth / texture.image.naturalHeight;
-
-      let newWidth, newHeight;
-      if (texture.image.naturalWidth > texture.image.naturalHeight) {
-        newWidth = maxWidth;
-        newHeight = maxWidth / aspectRatio;
-      } else {
-        newHeight = maxWidth;
-        newWidth = maxWidth * aspectRatio;
-      }
-
-      newWidth = Math.round(newWidth);
-      newHeight = Math.round(newHeight);
-
-      setBoxDimensions([newWidth, newHeight]);
-    }
-  }, [texture]);
-
-  const boxDepth = 0.05;
-
-  const materials = [
-    new THREE.MeshBasicMaterial({ color: 'black' }),
-    new THREE.MeshBasicMaterial({ color: 'black' }),
-    new THREE.MeshBasicMaterial({ color: 'black' }),
-    new THREE.MeshBasicMaterial({ color: 'black' }),
-    new THREE.MeshPhongMaterial({ map: texture }),
-    new THREE.MeshPhongMaterial({ map: texture }),
-  ];
-
-  useFrame(({ camera }) => {
-    if (meshRef.current) {
-      const direction = new THREE.Vector3()
-        .subVectors(meshRef.current.position, camera.position)
-        .normalize();
-      meshRef.current.lookAt(camera.position);
-      meshRef.current.rotation.z += Math.PI;
-    }
-  });
-
-  return (
-    <mesh position={position} ref={meshRef} castShadow material={materials}>
-      <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
-    </mesh>
-  );
-}
-
 function App() {
   const [images, setImages] = useState([]);
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [layout, setLayout] = useState('sphere'); // State for layout
-  const [interpolationFactor, setInterpolationFactor] = useState(0); // State for interpolation
+  const [layout, setLayout] = useState('sphere');
+  const [interpolationFactor, setInterpolationFactor] = useState(0);
+  const [targetPosition, setTargetPosition] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -189,7 +129,7 @@ function App() {
   const triggerTransition = (targetLayout) => {
     setLayout(targetLayout);
     let start = null;
-    const duration = 1000; // 1 second
+    const duration = 1000;
 
     const animate = (timestamp) => {
       if (!start) start = timestamp;
@@ -202,6 +142,12 @@ function App() {
     };
 
     requestAnimationFrame(animate);
+  };
+
+  const handleImageClick = (index) => {
+    console.log(`Image ${index} clicked`);
+    const targetPos = new THREE.Vector3(...imagesPositions[index]);
+    setTargetPosition(targetPos);
   };
 
   return (
@@ -242,7 +188,7 @@ function App() {
       >
         <fog attach="fog" args={['black', 0, 100]} />
         <Suspense fallback={<Loader />}>
-          <CustomCamera />
+          <CustomCamera targetPosition={targetPosition} />
 
           <ambientLight intensity={1.5} />
           {images.map((url, index) => (
@@ -250,6 +196,7 @@ function App() {
               key={index}
               url={url}
               position={imagesPositions[index]}
+              onClick={() => handleImageClick(index)}
             />
           ))}
           <WhitePlane />
