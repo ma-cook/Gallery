@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { TextureLoader } from 'three';
+
 import * as THREE from 'three';
 import {
   getAuth,
@@ -16,8 +17,11 @@ import {
   signOut,
 } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 import { db, storage } from './firebase';
 import CustomCamera from './CustomCamera';
+import { useProgress, Html } from '@react-three/drei';
 
 const auth = getAuth();
 
