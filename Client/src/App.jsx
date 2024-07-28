@@ -107,7 +107,6 @@ function Loader() {
 }
 
 function WhitePlane() {
-  // Plane size can be adjusted by changing these values
   const planeWidth = 200;
   const planeHeight = 200;
 
@@ -121,10 +120,11 @@ function WhitePlane() {
 
 function ImagePlane({ url, position }) {
   const texture = useLoader(TextureLoader, url);
-  texture.minFilter = THREE.LinearFilter; // Ensures the texture is not downsampled
-  texture.magFilter = THREE.LinearFilter; // Ensures the texture is displayed at high quality when magnified
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.flipY = false;
   const meshRef = useRef();
-  const [boxDimensions, setBoxDimensions] = useState([1, 1]); // Default dimensions
+  const [boxDimensions, setBoxDimensions] = useState([1, 1]);
 
   useEffect(() => {
     if (
@@ -132,22 +132,19 @@ function ImagePlane({ url, position }) {
       texture.image.naturalWidth &&
       texture.image.naturalHeight
     ) {
-      const maxWidth = 5; // Maximum size for the longest dimension
+      const maxWidth = 5;
       const aspectRatio =
         texture.image.naturalWidth / texture.image.naturalHeight;
 
       let newWidth, newHeight;
       if (texture.image.naturalWidth > texture.image.naturalHeight) {
-        // If width is the larger dimension, scale down based on width
         newWidth = maxWidth;
         newHeight = maxWidth / aspectRatio;
       } else {
-        // If height is the larger dimension or if they are equal, scale down based on height
         newHeight = maxWidth;
         newWidth = maxWidth * aspectRatio;
       }
 
-      // Ensure dimensions are integers to avoid sub-pixel rendering issues
       newWidth = Math.round(newWidth);
       newHeight = Math.round(newHeight);
 
@@ -155,24 +152,27 @@ function ImagePlane({ url, position }) {
     }
   }, [texture]);
 
-  const boxDepth = 0.05; // A small depth since the image is only on the front
+  const boxDepth = 0.05;
 
-  // Create materials for each side of the box
   const materials = [
-    new THREE.MeshBasicMaterial({ color: 'black' }), // Right side
-    new THREE.MeshBasicMaterial({ color: 'black' }), // Left side
-    new THREE.MeshBasicMaterial({ color: 'black' }), // Top side
-    new THREE.MeshBasicMaterial({ color: 'black' }), // Bottom side
-    new THREE.MeshPhongMaterial({ map: texture }), // Front side
-    new THREE.MeshPhongMaterial({ map: texture }), // Back side
+    new THREE.MeshBasicMaterial({ color: 'black' }),
+    new THREE.MeshBasicMaterial({ color: 'black' }),
+    new THREE.MeshBasicMaterial({ color: 'black' }),
+    new THREE.MeshBasicMaterial({ color: 'black' }),
+    new THREE.MeshPhongMaterial({ map: texture }),
+    new THREE.MeshPhongMaterial({ map: texture }),
   ];
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     if (meshRef.current) {
-      // Calculate the normal vector from the sphere's center to the plane's position
-      const normalVector = new THREE.Vector3().fromArray(position).normalize();
-      // Orient the plane to face away from the sphere's center
-      meshRef.current.lookAt(normalVector);
+      // Calculate the direction from the camera to the mesh
+      const direction = new THREE.Vector3()
+        .subVectors(meshRef.current.position, camera.position)
+        .normalize();
+      // Make the mesh look at the camera
+      meshRef.current.lookAt(camera.position);
+      // Adjust the rotation to ensure the front face points towards the camera
+      meshRef.current.rotation.z += Math.PI; // Rotate 180 degrees around the z axis
     }
   });
 
@@ -185,25 +185,25 @@ function ImagePlane({ url, position }) {
 
 function App() {
   const [images, setImages] = useState([]);
-  const [user, setUser] = useState(null); // State to hold the current user
+  const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [layout, setLayout] = useState('sphere'); // State for layout
+
   useEffect(() => {
-    // Listen for authentication state changes
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser); // Set the user or null
+      setUser(currentUser);
     });
 
-    return () => unsubscribe(); // Clean up the listener on unmount
+    return () => unsubscribe();
   }, []);
 
   const handleSignIn = async (email, password) => {
     await signInUser(email, password);
-    setIsAuthModalOpen(false); // Close the modal on successful sign-in
+    setIsAuthModalOpen(false);
   };
 
   useEffect(() => {
     const fetchImages = async () => {
-      // Removed the incorrect redeclaration of `db`
       const querySnapshot = await getDocs(collection(db, 'images'));
       const urls = [];
       querySnapshot.forEach((doc) => {
@@ -234,8 +234,9 @@ function App() {
     setImages((prevImages) => [...prevImages, url]);
   };
 
-  const sphereRadius = 15; // Adjust the radius of the sphere as needed
-  const imagesPositions = useMemo(() => {
+  const sphereRadius = 15;
+
+  const calculateSpherePositions = useCallback(() => {
     return images.map((_, index) => {
       const total = images.length;
       const phi = Math.acos(-1 + (2 * index) / total);
@@ -247,6 +248,22 @@ function App() {
       ];
     });
   }, [images]);
+
+  const calculatePlanePositions = useCallback(() => {
+    const gridSize = Math.ceil(Math.sqrt(images.length));
+    return images.map((_, index) => {
+      const row = Math.floor(index / gridSize);
+      const col = index % gridSize;
+      return [col * 5 - (gridSize * 5) / 2, row * 5 - (gridSize * 5) / 2, 0];
+    });
+  }, [images]);
+
+  const imagesPositions = useMemo(() => {
+    return layout === 'sphere'
+      ? calculateSpherePositions()
+      : calculatePlanePositions();
+  }, [layout, calculateSpherePositions, calculatePlanePositions]);
+
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <input
@@ -261,12 +278,13 @@ function App() {
           <button onClick={() => setIsAuthModalOpen(true)}>Login</button>
         )}
         {user && <button onClick={signOutUser}>Logout</button>}
-        {/* Trigger file input only if user is logged in */}
         <button
           onClick={() => user && document.getElementById('fileInput').click()}
         >
           Upload Image
         </button>
+        <button onClick={() => setLayout('sphere')}>Sphere Layout</button>
+        <button onClick={() => setLayout('plane')}>Plane Layout</button>
       </div>
       <AuthModal
         isOpen={isAuthModalOpen}
@@ -298,4 +316,5 @@ function App() {
     </div>
   );
 }
+
 export default App;
