@@ -8,91 +8,18 @@ import React, {
 } from 'react';
 import { Canvas, useFrame, useLoader } from '@react-three/fiber';
 import { TextureLoader } from 'three';
-
 import * as THREE from 'three';
-import {
-  getAuth,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-} from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-
-import { db, storage } from './firebase';
+import { getAuth } from 'firebase/auth';
+import { db } from './firebase';
 import CustomCamera from './CustomCamera';
 import { useProgress, Html } from '@react-three/drei';
+import AuthModal from './AuthModal';
+import { signInUser, signOutUser } from './Auth'; // Import the refactored functions
 
 const auth = getAuth();
-
-const signInUser = async (email, password) => {
-  try {
-    await signInWithEmailAndPassword(auth, email, password);
-    console.log('User signed in');
-  } catch (error) {
-    console.error('Error signing in: ', error.message);
-  }
-};
-
-const signOutUser = async () => {
-  try {
-    await signOut(auth);
-    console.log('User signed out');
-  } catch (error) {
-    console.error('Error signing out: ', error.message);
-  }
-};
-
-function AuthModal({ isOpen, onClose, onSignIn }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSignIn(email, password);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        backgroundColor: 'white',
-        padding: '20px',
-        zIndex: 100,
-      }}
-    >
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label style={{ color: 'black' }}>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label style={{ color: 'black' }}>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Sign In</button>
-        <button onClick={onClose} type="button">
-          Cancel
-        </button>
-      </form>
-    </div>
-  );
-}
 
 function Loader() {
   const { progress } = useProgress();
@@ -158,14 +85,11 @@ function ImagePlane({ url, position }) {
 
   useFrame(({ camera }) => {
     if (meshRef.current) {
-      // Calculate the direction from the camera to the mesh
       const direction = new THREE.Vector3()
         .subVectors(meshRef.current.position, camera.position)
         .normalize();
-      // Make the mesh look at the camera
       meshRef.current.lookAt(camera.position);
-      // Adjust the rotation to ensure the front face points towards the camera
-      meshRef.current.rotation.z += Math.PI; // Rotate 180 degrees around the z axis
+      meshRef.current.rotation.z += Math.PI;
     }
   });
 
