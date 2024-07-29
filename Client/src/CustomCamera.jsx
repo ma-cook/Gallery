@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, memo } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
-import { PerspectiveCamera } from '@react-three/drei';
-import { OrbitControls } from '@react-three/drei';
+import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 const CustomCamera = ({ targetPosition }) => {
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const cameraRef = useRef();
+  const controlsRef = useRef();
   const targetRef = useRef(new THREE.Vector3());
   const isMovingRef = useRef(false);
 
@@ -16,6 +16,12 @@ const CustomCamera = ({ targetPosition }) => {
       isMovingRef.current = true;
     }
   }, [targetPosition]);
+
+  useEffect(() => {
+    if (controlsRef.current) {
+      controlsRef.current.update();
+    }
+  }, []);
 
   useFrame(() => {
     if (isMovingRef.current) {
@@ -28,7 +34,7 @@ const CustomCamera = ({ targetPosition }) => {
         direction.multiplyScalar(offset)
       );
 
-      cameraRef.current.position.lerp(adjustedPosition, 0.8);
+      cameraRef.current.position.lerp(adjustedPosition, 0.1);
 
       // Stop moving if the camera is close enough to the target position
       if (cameraRef.current.position.distanceTo(adjustedPosition) < 0.1) {
@@ -38,6 +44,8 @@ const CustomCamera = ({ targetPosition }) => {
 
     // Ensure the camera always looks at the target position
     cameraRef.current.lookAt(targetRef.current);
+    controlsRef.current.target.copy(targetRef.current);
+    controlsRef.current.update();
   });
 
   return (
@@ -48,16 +56,17 @@ const CustomCamera = ({ targetPosition }) => {
         fov={70}
         near={0.1}
         far={5000}
-        position={[0, 0, 0]}
+        position={[0, 0, 40]}
         aspect={window.innerWidth / window.innerHeight}
       />
       <OrbitControls
+        ref={controlsRef}
+        args={[cameraRef.current, gl.domElement]}
         enableZoom={true}
         enablePan={true}
         enableRotate={true}
         enableDamping={true}
-        dampingFactor={1}
-        staticMoving={true}
+        dampingFactor={0.1}
       />
     </>
   );
