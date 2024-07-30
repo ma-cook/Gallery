@@ -6,7 +6,7 @@ import React, {
   useState,
   Suspense,
 } from 'react';
-import { Canvas, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
 import { TextureLoader } from 'three';
 import * as THREE from 'three';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -19,6 +19,7 @@ import { useProgress, Html } from '@react-three/drei';
 import AuthModal from './AuthModal';
 import { signInUser, signOutUser } from './Auth';
 import ImagePlane from './ImagePlane';
+import RaycasterHandler from './RaycasterHandler';
 
 const auth = getAuth();
 
@@ -189,7 +190,6 @@ function App() {
         <fog attach="fog" args={['black', 0, 100]} />
         <Suspense fallback={<Loader />}>
           <CustomCamera targetPosition={targetPosition} />
-
           <ambientLight intensity={1.5} />
           {images.map((url, index) => (
             <ImagePlane
@@ -197,9 +197,15 @@ function App() {
               url={url}
               position={imagesPositions[index]}
               onClick={() => handleImageClick(index)}
+              userData={{ url }}
             />
           ))}
           <WhitePlane />
+          <RaycasterHandler
+            images={images}
+            imagesPositions={imagesPositions}
+            handleImageClick={handleImageClick}
+          />
         </Suspense>
       </Canvas>
     </div>

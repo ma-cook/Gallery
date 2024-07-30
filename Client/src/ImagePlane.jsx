@@ -65,6 +65,7 @@ const ImagePlane = forwardRef(({ url, position, onClick }, ref) => {
       castShadow
       material={materials}
       onClick={onClick}
+      userData={{ url }} // Ensure userData is set here
     >
       <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
     </mesh>
