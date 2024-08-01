@@ -25,7 +25,7 @@ const CustomCamera = ({ targetPosition }) => {
 
   useFrame(() => {
     if (isMovingRef.current) {
-      const offset = 3; // Distance to offset the camera
+      const offset = 8; // Distance to offset the camera
       const direction = new THREE.Vector3()
         .subVectors(camera.position, targetRef.current)
         .normalize();

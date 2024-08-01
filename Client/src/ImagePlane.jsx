@@ -3,8 +3,8 @@ import { useFrame, useLoader } from '@react-three/fiber';
 import { TextureLoader } from 'three';
 import * as THREE from 'three';
 
-const ImagePlane = forwardRef(({ url, position, onClick }, ref) => {
-  const texture = useLoader(TextureLoader, url);
+const ImagePlane = forwardRef(({ index, position, onClick, images }, ref) => {
+  const texture = useLoader(TextureLoader, images[index]);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
   texture.flipY = false;
@@ -17,7 +17,7 @@ const ImagePlane = forwardRef(({ url, position, onClick }, ref) => {
       texture.image.naturalWidth &&
       texture.image.naturalHeight
     ) {
-      const maxWidth = 5;
+      const maxWidth = 10;
       const aspectRatio =
         texture.image.naturalWidth / texture.image.naturalHeight;
 
@@ -64,8 +64,8 @@ const ImagePlane = forwardRef(({ url, position, onClick }, ref) => {
       ref={ref || meshRef}
       castShadow
       material={materials}
+      userData={{ index }} // Use index instead of url
       onClick={onClick}
-      userData={{ url }} // Ensure userData is set here
     >
       <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
     </mesh>

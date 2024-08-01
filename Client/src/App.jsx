@@ -47,6 +47,7 @@ function App() {
   const [layout, setLayout] = useState('sphere');
   const [interpolationFactor, setInterpolationFactor] = useState(0);
   const [targetPosition, setTargetPosition] = useState(null);
+  const lastClickTime = useRef(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -93,7 +94,7 @@ function App() {
     setImages((prevImages) => [...prevImages, url]);
   };
 
-  const sphereRadius = 15;
+  const sphereRadius = 25;
 
   const calculateSpherePositions = useCallback(() => {
     return images.map((_, index) => {
@@ -146,9 +147,20 @@ function App() {
   };
 
   const handleImageClick = (index) => {
-    console.log(`Image ${index} clicked`);
-    const targetPos = new THREE.Vector3(...imagesPositions[index]);
-    setTargetPosition(targetPos);
+    const now = Date.now();
+    if (now - lastClickTime.current < 300) {
+      return; // Ignore clicks that happen within 300ms of the last click
+    }
+    lastClickTime.current = now;
+
+    if (index >= 0 && index < imagesPositions.length) {
+      const imagePosition = imagesPositions[index];
+      if (Array.isArray(imagePosition)) {
+        setTargetPosition(new THREE.Vector3(...imagePosition));
+      } else {
+      }
+    } else {
+    }
   };
 
   return (
@@ -194,16 +206,15 @@ function App() {
           {images.map((url, index) => (
             <ImagePlane
               key={index}
-              url={url}
+              index={index}
               position={imagesPositions[index]}
               onClick={() => handleImageClick(index)}
-              userData={{ url }}
+              images={images} // Pass images as a prop
             />
           ))}
           <WhitePlane />
           <RaycasterHandler
-            images={images}
-            imagesPositions={imagesPositions}
+            images={imagesPositions}
             handleImageClick={handleImageClick}
           />
         </Suspense>
