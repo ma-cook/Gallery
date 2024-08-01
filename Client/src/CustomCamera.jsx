@@ -56,7 +56,7 @@ const CustomCamera = ({ targetPosition }) => {
         fov={70}
         near={0.1}
         far={5000}
-        position={[0, 0, 40]}
+        position={[0, 20, 50]}
         aspect={window.innerWidth / window.innerHeight}
       />
       <OrbitControls

@@ -6,9 +6,7 @@ import React, {
   useState,
   Suspense,
 } from 'react';
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber';
-import { TextureLoader } from 'three';
-import * as THREE from 'three';
+import { Canvas } from '@react-three/fiber';
 import { onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -20,6 +18,7 @@ import AuthModal from './AuthModal';
 import { signInUser, signOutUser } from './Auth';
 import ImagePlane from './ImagePlane';
 import RaycasterHandler from './RaycasterHandler';
+import * as THREE from 'three';
 
 const auth = getAuth();
 
@@ -29,11 +28,11 @@ function Loader() {
 }
 
 function WhitePlane() {
-  const planeWidth = 200;
-  const planeHeight = 200;
+  const planeWidth = 600;
+  const planeHeight = 600;
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -20, 0]} receiveShadow>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -50, 0]} receiveShadow>
       <planeGeometry attach="geometry" args={[planeWidth, planeHeight]} />
       <meshStandardMaterial attach="material" color="white" />
     </mesh>
@@ -57,42 +56,42 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  const handleSignIn = async (email, password) => {
+  const handleSignIn = useCallback(async (email, password) => {
     await signInUser(email, password);
     setIsAuthModalOpen(false);
-  };
+  }, []);
 
   useEffect(() => {
     const fetchImages = async () => {
       const querySnapshot = await getDocs(collection(db, 'images'));
-      const urls = [];
-      querySnapshot.forEach((doc) => {
-        urls.push(doc.data().url);
-      });
+      const urls = querySnapshot.docs.map((doc) => doc.data().url);
       setImages(urls);
     };
 
     fetchImages();
   }, []);
 
-  const handleFileChange = async (event) => {
-    if (!user) {
-      alert('You must be signed in to upload images.');
-      return;
-    }
-    const file = event.target.files[0];
-    if (!file) return;
+  const handleFileChange = useCallback(
+    async (event) => {
+      if (!user) {
+        alert('You must be signed in to upload images.');
+        return;
+      }
+      const file = event.target.files[0];
+      if (!file) return;
 
-    const storage = getStorage();
-    const storageRef = ref(storage, `images/${file.name}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(snapshot.ref);
+      const storage = getStorage();
+      const storageRef = ref(storage, `images/${file.name}`);
+      const snapshot = await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
 
-    const db = getFirestore();
-    await addDoc(collection(db, 'images'), { url });
+      const db = getFirestore();
+      await addDoc(collection(db, 'images'), { url });
 
-    setImages((prevImages) => [...prevImages, url]);
-  };
+      setImages((prevImages) => [...prevImages, url]);
+    },
+    [user]
+  );
 
   const sphereRadius = 25;
 
@@ -114,7 +113,11 @@ function App() {
     return images.map((_, index) => {
       const row = Math.floor(index / gridSize);
       const col = index % gridSize;
-      return [col * 5 - (gridSize * 5) / 2, row * 5 - (gridSize * 5) / 2, 0];
+      return [
+        col * 10 - (gridSize * 10) / 2,
+        row * 10 - (gridSize * 10) / 2,
+        0,
+      ];
     });
   }, [images]);
 
@@ -128,7 +131,7 @@ function App() {
     });
   }, [interpolationFactor, calculateSpherePositions, calculatePlanePositions]);
 
-  const triggerTransition = (targetLayout) => {
+  const triggerTransition = useCallback((targetLayout) => {
     setLayout(targetLayout);
     let start = null;
     const duration = 1000;
@@ -144,24 +147,25 @@ function App() {
     };
 
     requestAnimationFrame(animate);
-  };
+  }, []);
 
-  const handleImageClick = (index) => {
-    const now = Date.now();
-    if (now - lastClickTime.current < 300) {
-      return; // Ignore clicks that happen within 300ms of the last click
-    }
-    lastClickTime.current = now;
-
-    if (index >= 0 && index < imagesPositions.length) {
-      const imagePosition = imagesPositions[index];
-      if (Array.isArray(imagePosition)) {
-        setTargetPosition(new THREE.Vector3(...imagePosition));
-      } else {
+  const handleImageClick = useCallback(
+    (index) => {
+      const now = Date.now();
+      if (now - lastClickTime.current < 100) {
+        return; // Ignore clicks that happen within 100ms of the last click
       }
-    } else {
-    }
-  };
+      lastClickTime.current = now;
+
+      if (index >= 0 && index < imagesPositions.length) {
+        const imagePosition = imagesPositions[index];
+        if (Array.isArray(imagePosition)) {
+          setTargetPosition(new THREE.Vector3(...imagePosition));
+        }
+      }
+    },
+    [imagesPositions]
+  );
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -199,7 +203,7 @@ function App() {
         antialias="true"
         pixelratio={window.devicePixelRatio}
       >
-        <fog attach="fog" args={['black', 0, 100]} />
+        <fog attach="fog" args={['black', 30, 200]} />
         <Suspense fallback={<Loader />}>
           <CustomCamera targetPosition={targetPosition} />
           <ambientLight intensity={1.5} />
