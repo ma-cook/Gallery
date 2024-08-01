@@ -34,7 +34,7 @@ const CustomCamera = ({ targetPosition }) => {
         direction.multiplyScalar(offset)
       );
 
-      cameraRef.current.position.lerp(adjustedPosition, 0.1);
+      cameraRef.current.position.lerp(adjustedPosition, 0.8);
 
       // Stop moving if the camera is close enough to the target position
       if (cameraRef.current.position.distanceTo(adjustedPosition) < 0.1) {

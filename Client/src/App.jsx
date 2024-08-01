@@ -13,7 +13,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { db } from './firebase';
 import CustomCamera from './CustomCamera';
-import { useProgress, Html } from '@react-three/drei';
+import { useProgress, Html, Text3D } from '@react-three/drei';
 import AuthModal from './AuthModal';
 import { signInUser, signOutUser } from './Auth';
 import ImagePlane from './ImagePlane';
@@ -181,11 +181,11 @@ function App() {
           <button onClick={() => setIsAuthModalOpen(true)}>Login</button>
         )}
         {user && <button onClick={signOutUser}>Logout</button>}
-        <button
-          onClick={() => user && document.getElementById('fileInput').click()}
-        >
-          Upload Image
-        </button>
+        {user && (
+          <button onClick={() => document.getElementById('fileInput').click()}>
+            Upload Image
+          </button>
+        )}
         <button onClick={() => triggerTransition('sphere')}>
           Sphere Layout
         </button>
@@ -207,6 +207,21 @@ function App() {
         <Suspense fallback={<Loader />}>
           <CustomCamera targetPosition={targetPosition} />
           <ambientLight intensity={1.5} />
+          <Text3D
+            font="/helvetiker_bold.typeface.json" // Replace with the path to your font file
+            size={5}
+            height={1}
+            curveSegments={32}
+            bevelEnabled
+            bevelThickness={0.1}
+            bevelSize={0.1}
+            bevelOffset={0}
+            bevelSegments={8}
+            position={[-12, sphereRadius + 10, 0]} // Position above the sphere
+          >
+            Gallery
+            <meshStandardMaterial attach="material" color="white" />
+          </Text3D>
           {images.map((url, index) => (
             <ImagePlane
               key={index}
