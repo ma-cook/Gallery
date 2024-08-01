@@ -56,9 +56,6 @@ function RaycasterHandler({ imagesPositions, handleImageClick }) {
           event.stopPropagation(); // Stop the event propagation
 
           // Simulate camera movement completion (replace with actual camera movement logic)
-          setTimeout(() => {
-            setIsMoving(false); // Reset the flag once the movement is complete
-          }, 10); // Adjust the timeout duration as needed
         }
       }
     }

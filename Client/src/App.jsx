@@ -155,7 +155,7 @@ function App() {
   const handleImageClick = useCallback(
     (index) => {
       const now = Date.now();
-      if (now - lastClickTime.current < 200) {
+      if (now - lastClickTime.current < 100) {
         return; // Ignore clicks that happen within 100ms of the last click
       }
       lastClickTime.current = now;
@@ -208,7 +208,7 @@ function App() {
         antialias="true"
         pixelratio={window.devicePixelRatio}
       >
-        <fog attach="fog" args={['black', 30, 200]} />
+        <fog attach="fog" args={['black', 200, 400]} />
         <Suspense fallback={<Loader />}>
           <CustomCamera targetPosition={targetPosition} />
           <ambientLight intensity={1.5} />
