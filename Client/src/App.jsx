@@ -13,7 +13,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getAuth } from 'firebase/auth';
 import { db } from './firebase';
 import CustomCamera from './CustomCamera';
-import { useProgress, Html, Text3D } from '@react-three/drei';
+import { useProgress, Html, Text3D, Clouds, Cloud } from '@react-three/drei';
 import AuthModal from './AuthModal';
 import { signInUser, signOutUser } from './Auth';
 import ImagePlane from './ImagePlane';
@@ -93,7 +93,9 @@ function App() {
     [user]
   );
 
-  const sphereRadius = 25;
+  const sphereRadius = useMemo(() => {
+    return 25 + images.length * 0.5; // Adjust the sphere radius based on the number of images
+  }, [images.length]);
 
   const calculateSpherePositions = useCallback(() => {
     return images.map((_, index) => {
@@ -106,16 +108,17 @@ function App() {
         sphereRadius * Math.cos(phi),
       ];
     });
-  }, [images]);
+  }, [images, sphereRadius]);
 
   const calculatePlanePositions = useCallback(() => {
     const gridSize = Math.ceil(Math.sqrt(images.length));
+    const spacing = 10 + images.length * 0.1; // Adjust the spacing based on the number of images
     return images.map((_, index) => {
       const row = Math.floor(index / gridSize);
       const col = index % gridSize;
       return [
-        col * 10 - (gridSize * 10) / 2,
-        row * 10 - (gridSize * 10) / 2,
+        col * spacing - (gridSize * spacing) / 2,
+        row * spacing - (gridSize * spacing) / 2,
         0,
       ];
     });
@@ -152,7 +155,7 @@ function App() {
   const handleImageClick = useCallback(
     (index) => {
       const now = Date.now();
-      if (now - lastClickTime.current < 100) {
+      if (now - lastClickTime.current < 200) {
         return; // Ignore clicks that happen within 100ms of the last click
       }
       lastClickTime.current = now;
@@ -160,7 +163,9 @@ function App() {
       if (index >= 0 && index < imagesPositions.length) {
         const imagePosition = imagesPositions[index];
         if (Array.isArray(imagePosition)) {
-          setTargetPosition(new THREE.Vector3(...imagePosition));
+          const newTargetPosition = new THREE.Vector3(...imagePosition);
+          console.log('Setting target position:', newTargetPosition);
+          setTargetPosition(newTargetPosition);
         }
       }
     },
@@ -217,11 +222,29 @@ function App() {
             bevelSize={0.1}
             bevelOffset={0}
             bevelSegments={8}
-            position={[-12, sphereRadius + 10, 0]} // Position above the sphere
+            position={[-16, sphereRadius + 13, 0]} // Position above the sphere
           >
             Gallery
             <meshStandardMaterial attach="material" color="white" />
           </Text3D>
+          <Clouds material={THREE.MeshBasicMaterial}>
+            <Cloud
+              seed={1}
+              scale={2}
+              volume={5}
+              color="orange"
+              fade={100}
+              position={[-12, sphereRadius + 10, 0]}
+            />
+            <Cloud
+              seed={1}
+              scale={2}
+              volume={5}
+              color="hotpink"
+              fade={100}
+              position={[5, sphereRadius + 10, 0]}
+            />
+          </Clouds>
           {images.map((url, index) => (
             <ImagePlane
               key={index}
