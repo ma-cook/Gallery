@@ -66,7 +66,7 @@ const CustomCamera = ({ targetPosition }) => {
         enablePan={true}
         enableRotate={true}
         enableDamping={true}
-        dampingFactor={0.1}
+        dampingFactor={0.05}
       />
     </>
   );
