@@ -7,28 +7,10 @@ function RaycasterHandler({ imagesPositions, handleImageClick }) {
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
   const [isMoving, setIsMoving] = useState(false);
-  const [isMouseDown, setIsMouseDown] = useState(false);
-  const mouseDownTime = useRef(0);
 
   const handleMouseMove = (event) => {
     mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
-  };
-
-  const handleMouseDown = () => {
-    setIsMouseDown(true);
-    mouseDownTime.current = Date.now();
-  };
-
-  const handleMouseUp = (event) => {
-    setIsMouseDown(false);
-    const mouseUpTime = Date.now();
-    const holdDuration = mouseUpTime - mouseDownTime.current;
-
-    if (holdDuration < 200) {
-      // Adjust the duration as needed
-      handleMouseClick(event);
-    }
   };
 
   const handleMouseClick = (event) => {
@@ -63,13 +45,11 @@ function RaycasterHandler({ imagesPositions, handleImageClick }) {
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mousedown', handleMouseDown);
-    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('click', handleMouseClick);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mousedown', handleMouseDown);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('click', handleMouseClick);
     };
   }, []);
 
