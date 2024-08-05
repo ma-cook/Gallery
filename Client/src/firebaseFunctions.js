@@ -6,7 +6,13 @@ import {
   deleteDoc,
   doc,
 } from 'firebase/firestore';
-import { getStorage, ref, deleteObject } from 'firebase/storage';
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  deleteObject,
+  getDownloadURL,
+} from 'firebase/storage';
 import { db } from './firebase';
 
 export const fetchImages = async () => {

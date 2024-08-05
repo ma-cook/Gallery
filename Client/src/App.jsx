@@ -27,9 +27,9 @@ import {
   calculateSpherePositions,
   calculatePlanePositions,
 } from './layoutFunctions';
-import { handleSignIn, handleSignOut } from './authFunctions';
+import { handleSignIn } from './authFunctions';
 import { Text3D, Clouds, Cloud } from '@react-three/drei';
-
+import Text3DComponent from './Text3DComponent';
 const auth = getAuth();
 
 function App() {
@@ -150,7 +150,7 @@ function App() {
         pixelratio={window.devicePixelRatio}
       >
         <fog attach="fog" args={['black', 200, 400]} />
-        <Suspense fallback={<Loader />}>
+        <Suspense>
           <CustomCamera targetPosition={targetPosition} />
           <ambientLight intensity={1.5} />
           <Text3DComponent
@@ -176,17 +176,19 @@ function App() {
               position={[30, sphereRadius + 22, 0]}
             />
           </Clouds>
-          {images.map((image, index) => (
-            <ImagePlane
-              key={index}
-              index={index}
-              position={imagesPositions[index]}
-              onClick={() => handleImageClick(index)}
-              images={images.map((img) => img.url)}
-              user={user}
-              onDelete={handleDeleteImage}
-            />
-          ))}
+          <Suspense fallback={<Loader />}>
+            {images.map((image, index) => (
+              <ImagePlane
+                key={index}
+                index={index}
+                position={imagesPositions[index]}
+                onClick={() => handleImageClick(index)}
+                images={images.map((img) => img.url)}
+                user={user}
+                onDelete={handleDeleteImage}
+              />
+            ))}
+          </Suspense>
           <WhitePlane />
           <RaycasterHandler
             images={imagesPositions}
@@ -195,113 +197,6 @@ function App() {
         </Suspense>
       </Canvas>
     </div>
-  );
-}
-
-function Text3DComponent({
-  triggerTransition,
-  sphereRadius,
-  setIsAuthModalOpen,
-}) {
-  const groupRef1 = useRef();
-  const groupRef2 = useRef();
-  const groupRef3 = useRef();
-  const textRef1 = useRef();
-  const textRef2 = useRef();
-  const textRef3 = useRef();
-  const sphereRef = useRef();
-  const cubeRef = useRef();
-
-  useEffect(() => {
-    const adjustPivot = (textRef) => {
-      if (textRef.current) {
-        const box = new THREE.Box3().setFromObject(textRef.current);
-        const center = box.getCenter(new THREE.Vector3());
-        textRef.current.position.sub(center);
-      }
-    };
-
-    adjustPivot(textRef1);
-    adjustPivot(textRef2);
-    adjustPivot(textRef3);
-  }, []);
-
-  useFrame(({ camera }) => {
-    if (groupRef1.current) groupRef1.current.lookAt(camera.position);
-    if (groupRef2.current) groupRef2.current.lookAt(camera.position);
-    if (groupRef3.current) groupRef3.current.lookAt(camera.position);
-  });
-
-  return (
-    <>
-      <group ref={groupRef1} position={[0, sphereRadius + 20, 0]}>
-        <Text3D
-          ref={textRef1}
-          font="/helvetiker_bold.typeface.json"
-          size={5}
-          height={1}
-          curveSegments={32}
-          bevelEnabled
-          bevelThickness={0.1}
-          bevelSize={0.1}
-          bevelOffset={0}
-          bevelSegments={8}
-        >
-          Gallery
-          <meshStandardMaterial attach="material" color="white" />
-        </Text3D>
-        <mesh
-          ref={sphereRef}
-          geometry={new THREE.SphereGeometry(0.5, 32, 32)}
-          material={new THREE.MeshStandardMaterial({ color: 'white' })}
-          position={[-15, 0, 0]} // Adjust the position to be slightly to the left of the text
-          onClick={() => setIsAuthModalOpen(true)}
-        />
-        <mesh
-          ref={cubeRef}
-          geometry={new THREE.SphereGeometry(0.5, 32, 32)}
-          material={new THREE.MeshStandardMaterial({ color: 'white' })}
-          position={[15, 0, 0]} // Adjust the position to be slightly to the left of the text
-          onClick={handleSignOut}
-        />
-      </group>
-      <group ref={groupRef2} position={[30, sphereRadius + 12, 0]}>
-        <Text3D
-          ref={textRef2}
-          font="/helvetiker_bold.typeface.json"
-          size={2}
-          height={0.5}
-          curveSegments={32}
-          bevelEnabled
-          bevelThickness={0.05}
-          bevelSize={0.05}
-          bevelOffset={0}
-          bevelSegments={8}
-          onClick={() => triggerTransition('sphere')}
-        >
-          Sphere Layout
-          <meshStandardMaterial attach="material" color="white" />
-        </Text3D>
-      </group>
-      <group ref={groupRef3} position={[-30, sphereRadius + 12, 0]}>
-        <Text3D
-          ref={textRef3}
-          font="/helvetiker_bold.typeface.json"
-          size={2}
-          height={0.5}
-          curveSegments={32}
-          bevelEnabled
-          bevelThickness={0.05}
-          bevelSize={0.05}
-          bevelOffset={0}
-          bevelSegments={8}
-          onClick={() => triggerTransition('plane')}
-        >
-          Plane Layout
-          <meshStandardMaterial attach="material" color="white" />
-        </Text3D>
-      </group>
-    </>
   );
 }
 

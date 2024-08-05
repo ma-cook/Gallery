@@ -10,6 +10,11 @@ const CustomCamera = ({ targetPosition }) => {
   const targetRef = useRef(new THREE.Vector3());
   const isMovingRef = useRef(false);
 
+  const planeWidth = 1200;
+  const planeHeight = 1200;
+  const planeYPosition = -50;
+  const minYPosition = planeYPosition + 2; // 2 units above the whitePlane
+
   useEffect(() => {
     if (targetPosition) {
       targetRef.current.copy(targetPosition);
@@ -46,6 +51,14 @@ const CustomCamera = ({ targetPosition }) => {
     cameraRef.current.lookAt(targetRef.current);
     controlsRef.current.target.copy(targetRef.current);
     controlsRef.current.update();
+
+    // Constrain the camera position within the bounds of the WhitePlane
+    const { x, y, z } = cameraRef.current.position;
+    cameraRef.current.position.set(
+      Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x)),
+      Math.max(minYPosition, y),
+      Math.max(-planeHeight / 2, Math.min(planeHeight / 2, z))
+    );
   });
 
   return (
@@ -67,6 +80,7 @@ const CustomCamera = ({ targetPosition }) => {
         enableRotate={true}
         enableDamping={true}
         dampingFactor={0.05}
+        maxDistance={150}
       />
     </>
   );

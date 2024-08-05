@@ -1,8 +1,8 @@
 import React from 'react';
 
 function WhitePlane() {
-  const planeWidth = 800;
-  const planeHeight = 800;
+  const planeWidth = 1200;
+  const planeHeight = 1200;
 
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -50, 0]} receiveShadow>
