@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text3D } from '@react-three/drei';
 import { handleSignIn, handleSignOut } from './authFunctions';
@@ -20,6 +20,30 @@ function Text3DComponent({
   const sphereRef = useRef();
   const cubeRef = useRef();
   const [positionsInitialized, setPositionsInitialized] = useState(false);
+
+  const sphereGeometry = useMemo(() => new THREE.SphereGeometry(2, 16, 32), []);
+  const boxGeometry1 = useMemo(() => new THREE.BoxGeometry(28, 0.5, 2), []);
+  const boxGeometry2 = useMemo(() => new THREE.BoxGeometry(20, 4, 2), []);
+  const boxGeometry3 = useMemo(() => new THREE.BoxGeometry(18, 4, 2), []);
+  const meshMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: 'white',
+
+        opacity: 0.6,
+        transparent: true,
+      }),
+    []
+  );
+
+  const transparentMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        opacity: 0,
+        transparent: true,
+      }),
+    []
+  );
 
   useFrame(({ camera }) => {
     if (groupRef1.current) groupRef1.current.lookAt(camera.position);
@@ -53,7 +77,7 @@ function Text3DComponent({
 
       setPositionsInitialized(true);
     }
-  }, [sphereRadius, images, positionsInitialized]); // Add images as a dependency
+  }, [sphereRadius, images, positionsInitialized]);
 
   return (
     <>
@@ -79,59 +103,41 @@ function Text3DComponent({
             intensity={1.2}
           />
         </Text3D>
-        <mesh position={[0, -4, 0]}>
-          <boxGeometry attach="geometry" args={[28, 0.5, 2]} />
-          <meshBasicMaterial
-            attach="material"
-            color={'white'}
-            opacity={0.6}
-            transparent={true}
-          />
+        <mesh
+          position={[0, -4, 0]}
+          geometry={boxGeometry1}
+          material={meshMaterial}
+        >
+          <FakeGlowMaterial glowColor="#fff4d2" />
         </mesh>
         <mesh
           ref={sphereRef}
           position={[-15, 0, 0]}
+          geometry={sphereGeometry}
+          material={meshMaterial}
           onClick={() => setIsAuthModalOpen(true)}
         >
-          <sphereGeometry attach="geometry" args={[2, 16, 32]} />
-          <meshBasicMaterial
-            attach="material"
-            color={'orange'}
-            roughness={1}
-            metalness={0}
-            intensity={1.2}
-            opacity={0.6}
-            transparent={true}
-          />
           <pointLight
             distance={200}
             decay={1}
             position={[0, 0, 0]}
             color="#fff4d2"
-            skyColor="#fff4d2"
-            groundColor="#fff4d2"
             intensity={10}
           />
           <FakeGlowMaterial glowColor="#fff4d2" />
         </mesh>
-        <mesh ref={cubeRef} position={[15, 0, 0]} onClick={handleSignOut}>
-          <sphereGeometry attach="geometry" args={[2, 16, 32]} />
-          <meshBasicMaterial
-            attach="material"
-            color={'orange'}
-            roughness={1}
-            metalness={0}
-            intensity={1.2}
-            opacity={0.6}
-            transparent={true}
-          />
+        <mesh
+          ref={cubeRef}
+          position={[15, 0, 0]}
+          geometry={sphereGeometry}
+          material={meshMaterial}
+          onClick={handleSignOut}
+        >
           <pointLight
             distance={200}
             decay={1}
             position={[0, 0, 0]}
             color="#fff4d2"
-            skyColor="#fff4d2"
-            groundColor="#fff4d2"
             intensity={10}
           />
           <FakeGlowMaterial glowColor="#fff4d2" />
@@ -157,15 +163,12 @@ function Text3DComponent({
             emissive="white"
           />
         </Text3D>
-        <mesh position={[0, 0, 0]} onClick={() => triggerTransition('sphere')}>
-          <boxGeometry attach="geometry" args={[20, 4, 2]} />
-          <meshBasicMaterial
-            attach="material"
-            color={'white'}
-            opacity={0.0}
-            transparent={true}
-          />
-        </mesh>
+        <mesh
+          position={[0, 0, 0]}
+          geometry={boxGeometry2}
+          material={transparentMaterial}
+          onClick={() => triggerTransition('sphere')}
+        ></mesh>
       </group>
       <group ref={groupRef3}>
         <Text3D
@@ -187,18 +190,15 @@ function Text3DComponent({
             emissive="white"
           />
         </Text3D>
-        <mesh position={[0, 0, 0]} onClick={() => triggerTransition('plane')}>
-          <boxGeometry attach="geometry" args={[18, 4, 2]} />
-          <meshBasicMaterial
-            attach="material"
-            color={'white'}
-            opacity={0.0}
-            transparent={true}
-          />
-        </mesh>
+        <mesh
+          position={[0, 0, 0]}
+          geometry={boxGeometry3}
+          material={transparentMaterial}
+          onClick={() => triggerTransition('plane')}
+        ></mesh>
       </group>
     </>
   );
 }
 
-export default Text3DComponent;
+export default React.memo(Text3DComponent);

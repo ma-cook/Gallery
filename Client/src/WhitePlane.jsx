@@ -10,7 +10,7 @@ function WhitePlane() {
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -40, 0]}>
       <planeGeometry args={[planeWidth, planeHeight]} />
       <MeshReflectorMaterial
-        resolution={1024}
+        resolution={512}
         mirror={0.95}
         mixBlur={0.1}
         mixStrength={4}

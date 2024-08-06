@@ -1,4 +1,4 @@
-import React, { forwardRef, useRef, useEffect, useState } from 'react';
+import React, { forwardRef, useRef, useEffect, useState, useMemo } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
 import { TextureLoader } from 'three';
 import * as THREE from 'three';
@@ -36,24 +36,37 @@ const ImagePlane = forwardRef(
         newWidth = Math.round(newWidth);
         newHeight = Math.round(newHeight);
 
-        setBoxDimensions([newWidth, newHeight]);
+        setBoxDimensions((prevDimensions) => {
+          if (
+            prevDimensions[0] !== newWidth ||
+            prevDimensions[1] !== newHeight
+          ) {
+            return [newWidth, newHeight];
+          }
+          return prevDimensions;
+        });
       }
     }, [texture]);
 
     const boxDepth = 0.05;
 
-    const materials = [
-      new THREE.MeshBasicMaterial({ color: 'black' }),
-      new THREE.MeshBasicMaterial({ color: 'black' }),
-      new THREE.MeshBasicMaterial({ color: 'black' }),
-      new THREE.MeshBasicMaterial({ color: 'black' }),
-      new THREE.MeshPhongMaterial({ map: texture }),
-      new THREE.MeshPhongMaterial({ map: texture }),
-    ];
+    const materials = useMemo(
+      () => [
+        new THREE.MeshBasicMaterial({ color: 'black' }),
+        new THREE.MeshBasicMaterial({ color: 'black' }),
+        new THREE.MeshBasicMaterial({ color: 'black' }),
+        new THREE.MeshBasicMaterial({ color: 'black' }),
+        new THREE.MeshPhongMaterial({ map: texture }),
+        new THREE.MeshPhongMaterial({ map: texture }),
+      ],
+      [texture]
+    );
+
+    const direction = useMemo(() => new THREE.Vector3(), []);
 
     useFrame(({ camera }) => {
       if (meshRef.current) {
-        const direction = new THREE.Vector3()
+        direction
           .subVectors(meshRef.current.position, camera.position)
           .normalize();
         meshRef.current.lookAt(camera.position);

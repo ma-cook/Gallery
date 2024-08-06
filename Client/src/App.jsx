@@ -1,5 +1,4 @@
 import React, {
-  forwardRef,
   useRef,
   useEffect,
   useState,
@@ -7,11 +6,9 @@ import React, {
   useMemo,
   Suspense,
 } from 'react';
-import { useFrame, useLoader, Canvas } from '@react-three/fiber';
-import { TextureLoader } from 'three';
+import { useFrame, Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
-import { db } from './firebase';
 import CustomCamera from './CustomCamera';
 import AuthModal from './AuthModal';
 import ImagePlane from './ImagePlane';
@@ -28,10 +25,8 @@ import {
   calculatePlanePositions,
 } from './layoutFunctions';
 import { handleSignIn } from './authFunctions';
-import { Text3D, Clouds, Cloud } from '@react-three/drei';
 import Text3DComponent from './TextComponent';
 const auth = getAuth();
-import FakeGlowMaterial from './FakeGlowMaterial';
 import OrbLight from './OrbLight';
 
 function App() {
