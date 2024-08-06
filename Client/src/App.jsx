@@ -29,8 +29,10 @@ import {
 } from './layoutFunctions';
 import { handleSignIn } from './authFunctions';
 import { Text3D, Clouds, Cloud } from '@react-three/drei';
-import Text3DComponent from './Text3DComponent';
+import Text3DComponent from './TextComponent';
 const auth = getAuth();
+import FakeGlowMaterial from './FakeGlowMaterial';
+import OrbLight from './OrbLight';
 
 function App() {
   const [images, setImages] = useState([]);
@@ -152,30 +154,12 @@ function App() {
         <fog attach="fog" args={['black', 200, 400]} />
         <Suspense>
           <CustomCamera targetPosition={targetPosition} />
-          <ambientLight intensity={1.5} />
+          <OrbLight />
           <Text3DComponent
             triggerTransition={triggerTransition}
             sphereRadius={sphereRadius}
             setIsAuthModalOpen={setIsAuthModalOpen}
           />
-          <Clouds material={THREE.MeshBasicMaterial}>
-            <Cloud
-              seed={1}
-              scale={2}
-              volume={5}
-              color="orange"
-              fade={100}
-              position={[-30, sphereRadius + 22, 0]}
-            />
-            <Cloud
-              seed={1}
-              scale={2}
-              volume={5}
-              color="hotpink"
-              fade={100}
-              position={[30, sphereRadius + 22, 0]}
-            />
-          </Clouds>
           <Suspense fallback={<Loader />}>
             {images.map((image, index) => (
               <ImagePlane
