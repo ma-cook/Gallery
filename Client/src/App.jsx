@@ -155,10 +155,12 @@ function App() {
         <Suspense>
           <CustomCamera targetPosition={targetPosition} />
           <OrbLight />
+
           <Text3DComponent
             triggerTransition={triggerTransition}
             sphereRadius={sphereRadius}
             setIsAuthModalOpen={setIsAuthModalOpen}
+            images={images}
           />
           <Suspense fallback={<Loader />}>
             {images.map((image, index) => (

@@ -1,13 +1,15 @@
 import * as THREE from 'three';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text3D, Sparkles } from '@react-three/drei';
+import { Text3D } from '@react-three/drei';
 import { handleSignIn, handleSignOut } from './authFunctions';
 import FakeGlowMaterial from './FakeGlowMaterial';
+
 function Text3DComponent({
   triggerTransition,
   sphereRadius,
   setIsAuthModalOpen,
+  images, // Add images as a prop
 }) {
   const groupRef1 = useRef();
   const groupRef2 = useRef();
@@ -17,23 +19,7 @@ function Text3DComponent({
   const textRef3 = useRef();
   const sphereRef = useRef();
   const cubeRef = useRef();
-  const glowRed = new THREE.MeshPhongMaterial({
-    color: new THREE.Color(9, 9, 9),
-    toneMapped: false,
-  });
-  useEffect(() => {
-    const adjustPivot = (textRef) => {
-      if (textRef.current) {
-        const box = new THREE.Box3().setFromObject(textRef.current);
-        const center = box.getCenter(new THREE.Vector3());
-        textRef.current.position.sub(center);
-      }
-    };
-
-    adjustPivot(textRef1);
-    adjustPivot(textRef2);
-    adjustPivot(textRef3);
-  }, []);
+  const [positionsInitialized, setPositionsInitialized] = useState(false);
 
   useFrame(({ camera }) => {
     if (groupRef1.current) groupRef1.current.lookAt(camera.position);
@@ -41,9 +27,37 @@ function Text3DComponent({
     if (groupRef3.current) groupRef3.current.lookAt(camera.position);
   });
 
+  useEffect(() => {
+    if (!positionsInitialized) {
+      const adjustPivot = (textRef) => {
+        if (textRef.current) {
+          const box = new THREE.Box3().setFromObject(textRef.current);
+          const center = box.getCenter(new THREE.Vector3());
+          textRef.current.position.sub(center);
+        }
+      };
+
+      adjustPivot(textRef1);
+      adjustPivot(textRef2);
+      adjustPivot(textRef3);
+
+      if (groupRef1.current) {
+        groupRef1.current.position.set(0, sphereRadius + 20, 0);
+      }
+      if (groupRef2.current) {
+        groupRef2.current.position.set(30, sphereRadius + 12, 0);
+      }
+      if (groupRef3.current) {
+        groupRef3.current.position.set(-30, sphereRadius + 12, 0);
+      }
+
+      setPositionsInitialized(true);
+    }
+  }, [sphereRadius, images, positionsInitialized]); // Add images as a dependency
+
   return (
     <>
-      <group ref={groupRef1} position={[0, sphereRadius + 20, 0]}>
+      <group ref={groupRef1}>
         <Text3D
           ref={textRef1}
           font="/Sankofa Display_Regular.json"
@@ -74,7 +88,11 @@ function Text3DComponent({
             transparent={true}
           />
         </mesh>
-        <mesh position={[-15, 0, 0]} onClick={() => setIsAuthModalOpen(true)}>
+        <mesh
+          ref={sphereRef}
+          position={[-15, 0, 0]}
+          onClick={() => setIsAuthModalOpen(true)}
+        >
           <sphereGeometry attach="geometry" args={[2, 16, 32]} />
           <meshBasicMaterial
             attach="material"
@@ -94,11 +112,9 @@ function Text3DComponent({
             groundColor="#fff4d2"
             intensity={10}
           />
-
           <FakeGlowMaterial glowColor="#fff4d2" />
         </mesh>
-
-        <mesh position={[15, 0, 0]} onClick={handleSignOut}>
+        <mesh ref={cubeRef} position={[15, 0, 0]} onClick={handleSignOut}>
           <sphereGeometry attach="geometry" args={[2, 16, 32]} />
           <meshBasicMaterial
             attach="material"
@@ -118,11 +134,10 @@ function Text3DComponent({
             groundColor="#fff4d2"
             intensity={10}
           />
-
           <FakeGlowMaterial glowColor="#fff4d2" />
         </mesh>
       </group>
-      <group ref={groupRef2} position={[30, sphereRadius + 12, 0]}>
+      <group ref={groupRef2}>
         <Text3D
           ref={textRef2}
           font="/Sankofa Display_Regular.json"
@@ -152,7 +167,7 @@ function Text3DComponent({
           />
         </mesh>
       </group>
-      <group ref={groupRef3} position={[-30, sphereRadius + 12, 0]}>
+      <group ref={groupRef3}>
         <Text3D
           ref={textRef3}
           font="/Sankofa Display_Regular.json"
