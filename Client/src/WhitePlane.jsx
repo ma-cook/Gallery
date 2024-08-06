@@ -11,7 +11,7 @@ function WhitePlane() {
       <planeGeometry args={[planeWidth, planeHeight]} />
       <MeshReflectorMaterial
         resolution={1024}
-        mirror={0.8}
+        mirror={0.95}
         mixBlur={0.1}
         mixStrength={4}
         depthScale={10} // Decreased depthScale
@@ -20,8 +20,8 @@ function WhitePlane() {
         depthToBlurRatioBias={0}
         reflectorOffset={0.1} // Decreased reflectorOffset
         color="white"
-        metalness={0.5}
-        roughness={0.1}
+        metalness={0.9}
+        roughness={0}
       />
     </mesh>
   );

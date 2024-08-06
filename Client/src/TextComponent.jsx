@@ -46,7 +46,7 @@ function Text3DComponent({
       <group ref={groupRef1} position={[0, sphereRadius + 20, 0]}>
         <Text3D
           ref={textRef1}
-          font="/helvetiker_bold.typeface.json"
+          font="/Sankofa Display_Regular.json"
           size={5}
           height={1}
           curveSegments={50}
@@ -125,7 +125,7 @@ function Text3DComponent({
       <group ref={groupRef2} position={[30, sphereRadius + 12, 0]}>
         <Text3D
           ref={textRef2}
-          font="/helvetiker_bold.typeface.json"
+          font="/Sankofa Display_Regular.json"
           size={2}
           height={0.5}
           curveSegments={32}
@@ -155,7 +155,7 @@ function Text3DComponent({
       <group ref={groupRef3} position={[-30, sphereRadius + 12, 0]}>
         <Text3D
           ref={textRef3}
-          font="/helvetiker_bold.typeface.json"
+          font="/Sankofa Display_Regular.json"
           size={2}
           height={0.5}
           curveSegments={32}
