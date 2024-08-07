@@ -32,6 +32,24 @@ const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
 
 const auth = getAuth();
 
+// Object Pool for THREE.Vector3
+class Vector3Pool {
+  constructor() {
+    this.pool = [];
+  }
+
+  acquire() {
+    return this.pool.length > 0 ? this.pool.pop() : new THREE.Vector3();
+  }
+
+  release(vector) {
+    vector.set(0, 0, 0);
+    this.pool.push(vector);
+  }
+}
+
+const vector3Pool = new Vector3Pool();
+
 function App() {
   const [images, setImages] = useState([]);
   const [user, setUser] = useState(null);
@@ -64,9 +82,12 @@ function App() {
     const spherePositions = calculateSpherePositions(images, sphereRadius);
     const planePositions = calculatePlanePositions(images);
     return images.map((_, index) => {
-      const spherePos = new THREE.Vector3(...spherePositions[index]);
-      const planePos = new THREE.Vector3(...planePositions[index]);
-      return spherePos.lerp(planePos, interpolationFactor).toArray();
+      const spherePos = vector3Pool.acquire().fromArray(spherePositions[index]);
+      const planePos = vector3Pool.acquire().fromArray(planePositions[index]);
+      const result = spherePos.lerp(planePos, interpolationFactor).toArray();
+      vector3Pool.release(spherePos);
+      vector3Pool.release(planePos);
+      return result;
     });
   }, [interpolationFactor, images, sphereRadius]);
 
@@ -99,7 +120,9 @@ function App() {
       if (index >= 0 && index < imagesPositions.length) {
         const imagePosition = imagesPositions[index];
         if (Array.isArray(imagePosition)) {
-          const newTargetPosition = new THREE.Vector3(...imagePosition);
+          const newTargetPosition = vector3Pool
+            .acquire()
+            .fromArray(imagePosition);
           console.log('Setting target position:', newTargetPosition);
           setTargetPosition(newTargetPosition);
         }
@@ -178,4 +201,4 @@ function App() {
   );
 }
 
-export default App;
+export default React.memo(App);

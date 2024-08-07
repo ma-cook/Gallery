@@ -1,14 +1,19 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
-function WhitePlane() {
+const WhitePlane = React.memo(() => {
   const planeWidth = 1200;
   const planeHeight = 1200;
 
+  const planeGeometry = useMemo(
+    () => <planeGeometry args={[planeWidth, planeHeight]} />,
+    [planeWidth, planeHeight]
+  );
+
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -40, 0]}>
-      <planeGeometry args={[planeWidth, planeHeight]} />
+      {planeGeometry}
       <MeshReflectorMaterial
         resolution={512}
         mirror={0.95}
@@ -25,6 +30,6 @@ function WhitePlane() {
       />
     </mesh>
   );
-}
+});
 
 export default WhitePlane;

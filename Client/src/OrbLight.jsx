@@ -18,7 +18,7 @@ const OrbLight = () => {
   const lightProps = useMemo(
     () => ({
       distance: 200,
-      decay: 1,
+      decay: 0.8,
       position: [0, 0, 0],
       color: '#fff4d2',
       intensity: 25,

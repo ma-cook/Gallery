@@ -1,5 +1,11 @@
 import * as THREE from 'three';
-import React, { useRef, useEffect, useState, useMemo } from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text3D } from '@react-three/drei';
 import { handleSignIn, handleSignOut } from './authFunctions';
@@ -20,27 +26,28 @@ function Text3DComponent({
   const cubeRef = useRef();
   const [positionsInitialized, setPositionsInitialized] = useState(false);
 
-  const sphereGeometry = useMemo(() => new THREE.SphereGeometry(2, 16, 32), []);
-  const boxGeometry1 = useMemo(() => new THREE.BoxGeometry(28, 0.5, 2), []);
-  const boxGeometry2 = useMemo(() => new THREE.BoxGeometry(20, 4, 2), []);
-  const boxGeometry3 = useMemo(() => new THREE.BoxGeometry(18, 4, 2), []);
-  const meshMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        color: 'white',
-
-        opacity: 0.6,
-        transparent: true,
-      }),
+  const geometries = useMemo(
+    () => ({
+      sphere: new THREE.SphereGeometry(2, 16, 32),
+      box1: new THREE.BoxGeometry(28, 0.5, 2),
+      box2: new THREE.BoxGeometry(20, 4, 2),
+      box3: new THREE.BoxGeometry(18, 4, 2),
+    }),
     []
   );
 
-  const transparentMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
+  const materials = useMemo(
+    () => ({
+      mesh: new THREE.MeshBasicMaterial({
+        color: 'white',
+        opacity: 0.6,
+        transparent: true,
+      }),
+      transparent: new THREE.MeshBasicMaterial({
         opacity: 0,
         transparent: true,
       }),
+    }),
     []
   );
 
@@ -50,16 +57,14 @@ function Text3DComponent({
     if (groupRef3.current) groupRef3.current.lookAt(camera.position);
   });
 
+  const adjustPivot = useCallback((textRef) => {
+    if (textRef.current) {
+      textRef.current.geometry.center();
+    }
+  }, []);
+
   useEffect(() => {
     if (!positionsInitialized) {
-      const adjustPivot = (textRef) => {
-        if (textRef.current) {
-          const box = new THREE.Box3().setFromObject(textRef.current);
-          const center = box.getCenter(new THREE.Vector3());
-          textRef.current.position.sub(center);
-        }
-      };
-
       adjustPivot(textRef1);
       adjustPivot(textRef2);
       adjustPivot(textRef3);
@@ -76,7 +81,7 @@ function Text3DComponent({
 
       setPositionsInitialized(true);
     }
-  }, [sphereRadius, positionsInitialized]);
+  }, [sphereRadius, positionsInitialized, adjustPivot]);
 
   return (
     <>
@@ -104,16 +109,14 @@ function Text3DComponent({
         </Text3D>
         <mesh
           position={[0, -4, 0]}
-          geometry={boxGeometry1}
-          material={meshMaterial}
-        >
-          <FakeGlowMaterial glowColor="#fff4d2" />
-        </mesh>
+          geometry={geometries.box1}
+          material={materials.mesh}
+        ></mesh>
         <mesh
           ref={sphereRef}
           position={[-15, 0, 0]}
-          geometry={sphereGeometry}
-          material={meshMaterial}
+          geometry={geometries.sphere}
+          material={materials.mesh}
           onClick={() => setIsAuthModalOpen(true)}
         >
           <pointLight
@@ -128,8 +131,8 @@ function Text3DComponent({
         <mesh
           ref={cubeRef}
           position={[15, 0, 0]}
-          geometry={sphereGeometry}
-          material={meshMaterial}
+          geometry={geometries.sphere}
+          material={materials.mesh}
           onClick={handleSignOut}
         >
           <pointLight
@@ -164,8 +167,8 @@ function Text3DComponent({
         </Text3D>
         <mesh
           position={[0, 0, 0]}
-          geometry={boxGeometry2}
-          material={transparentMaterial}
+          geometry={geometries.box2}
+          material={materials.transparent}
           onClick={() => triggerTransition('sphere')}
         ></mesh>
       </group>
@@ -191,8 +194,8 @@ function Text3DComponent({
         </Text3D>
         <mesh
           position={[0, 0, 0]}
-          geometry={boxGeometry3}
-          material={transparentMaterial}
+          geometry={geometries.box3}
+          material={materials.transparent}
           onClick={() => triggerTransition('plane')}
         ></mesh>
       </group>
