@@ -3,8 +3,8 @@ import { MeshReflectorMaterial } from '@react-three/drei';
 import * as THREE from 'three';
 
 const WhitePlane = React.memo(() => {
-  const planeWidth = 1200;
-  const planeHeight = 1200;
+  const planeWidth = 3000;
+  const planeHeight = 3000;
 
   const planeGeometry = useMemo(
     () => <planeGeometry args={[planeWidth, planeHeight]} />,

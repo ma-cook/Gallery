@@ -5,6 +5,8 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  setDoc,
+  getDoc,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -46,4 +48,22 @@ export const deleteImage = async (imageId, imageUrl) => {
   const storage = getStorage();
   const storageRef = ref(storage, imageUrl);
   await deleteObject(storageRef);
+};
+
+export const saveColor = async (backgroundColor) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'backgroundColor'), {
+    backgroundColor: backgroundColor,
+  });
+};
+
+export const fetchColor = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'backgroundColor');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().backgroundColor;
+  } else {
+    return 'black'; // default color
+  }
 };

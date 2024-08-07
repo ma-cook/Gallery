@@ -18,6 +18,8 @@ import {
   fetchImages,
   handleFileChange,
   deleteImage,
+  saveColor,
+  fetchColor,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
@@ -50,13 +52,46 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
+function SettingsModal({ isOpen, onClose, onColorChange }) {
+  const [color, setColor] = useState('#ffffff');
+
+  const handleColorChange = (event) => {
+    setColor(event.target.value);
+    onColorChange(event.target.value);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: '20%',
+        left: '20%',
+        background: 'white',
+        padding: '20px',
+        zIndex: 2,
+      }}
+    >
+      <h2>Settings</h2>
+      <label>
+        Background and Fog Color:
+        <input type="color" value={color} onChange={handleColorChange} />
+      </label>
+      <button onClick={onClose}>Close</button>
+    </div>
+  );
+}
+
 function App() {
   const [images, setImages] = useState([]);
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [layout, setLayout] = useState('sphere');
   const [interpolationFactor, setInterpolationFactor] = useState(0);
   const [targetPosition, setTargetPosition] = useState(null);
+  const [backgroundColor, setBackgroundColor] = useState('white');
   const lastClickTime = useRef(0);
 
   useEffect(() => {
@@ -74,6 +109,15 @@ function App() {
     };
 
     fetchAndSetImages();
+  }, []);
+
+  useEffect(() => {
+    const fetchAndSetColor = async () => {
+      const backgroundColor = await fetchColor();
+      setBackgroundColor(backgroundColor);
+    };
+
+    fetchAndSetColor();
   }, []);
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
@@ -140,6 +184,11 @@ function App() {
     [images]
   );
 
+  const handleColorChange = async (color) => {
+    setBackgroundColor(color);
+    await saveColor(color);
+  };
+
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <input
@@ -151,9 +200,16 @@ function App() {
       />
       <div style={{ position: 'absolute', zIndex: 1 }}>
         {user && (
-          <button onClick={() => document.getElementById('fileInput').click()}>
-            Upload Image
-          </button>
+          <>
+            <button
+              onClick={() => document.getElementById('fileInput').click()}
+            >
+              Upload Image
+            </button>
+            <button onClick={() => setIsSettingsModalOpen(true)}>
+              Settings
+            </button>
+          </>
         )}
       </div>
       <AuthModal
@@ -163,12 +219,17 @@ function App() {
           handleSignIn(email, password, setIsAuthModalOpen)
         }
       />
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onColorChange={handleColorChange}
+      />
       <Canvas
-        style={{ background: 'black' }}
+        style={{ background: backgroundColor }}
         antialias="true"
         pixelratio={window.devicePixelRatio}
       >
-        <fog attach="fog" args={['black', 200, 400]} />
+        <fog attach="fog" args={[backgroundColor, 200, 400]} />
 
         <CustomCamera targetPosition={targetPosition} />
         <OrbLight />
