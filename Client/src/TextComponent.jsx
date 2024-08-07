@@ -88,10 +88,10 @@ function Text3DComponent({
       <group ref={groupRef1}>
         <Text3D
           ref={textRef1}
-          font="/Sankofa Display_Regular.json"
+          font="/optimer_bold.typeface.json"
           size={5}
           height={1}
-          curveSegments={50}
+          curveSegments={10}
           bevelEnabled
           bevelThickness={0.1}
           bevelSize={0.1}
@@ -148,15 +148,15 @@ function Text3DComponent({
       <group ref={groupRef2}>
         <Text3D
           ref={textRef2}
-          font="/Sankofa Display_Regular.json"
+          font="/optimer_bold.typeface.json"
           size={2}
           height={0.5}
-          curveSegments={32}
+          curveSegments={10}
           bevelEnabled
           bevelThickness={0.05}
           bevelSize={0.05}
           bevelOffset={0}
-          bevelSegments={8}
+          bevelSegments={10}
         >
           Sphere Layout
           <meshStandardMaterial
@@ -175,15 +175,15 @@ function Text3DComponent({
       <group ref={groupRef3}>
         <Text3D
           ref={textRef3}
-          font="/Sankofa Display_Regular.json"
+          font="/optimer_bold.typeface.json"
           size={2}
           height={0.5}
-          curveSegments={32}
+          curveSegments={10}
           bevelEnabled
           bevelThickness={0.05}
           bevelSize={0.05}
           bevelOffset={0}
-          bevelSegments={8}
+          bevelSegments={10}
         >
           Plane Layout
           <meshStandardMaterial
