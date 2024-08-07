@@ -67,3 +67,21 @@ export const fetchColor = async () => {
     return 'black'; // default color
   }
 };
+
+export const saveOrbColor = async (color) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'glowColor'), {
+    glowColor: color,
+  });
+};
+
+export const fetchOrbColor = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'glowColor');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().glowColor;
+  } else {
+    return '#fff4d2'; // default color
+  }
+};

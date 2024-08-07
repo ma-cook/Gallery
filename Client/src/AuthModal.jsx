@@ -19,14 +19,15 @@ function AuthModal({ isOpen, onClose, onSignIn }) {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        backgroundColor: 'white',
+        backgroundColor: 'black',
         padding: '20px',
         zIndex: 100,
+        borderRadius: '5px',
       }}
     >
       <form onSubmit={handleSubmit}>
         <div>
-          <label style={{ color: 'black' }}>Email:</label>
+          <label style={{ color: 'white' }}>Email:</label>
           <input
             type="email"
             value={email}
@@ -35,7 +36,7 @@ function AuthModal({ isOpen, onClose, onSignIn }) {
           />
         </div>
         <div>
-          <label style={{ color: 'black' }}>Password:</label>
+          <label style={{ color: 'white' }}>Password:</label>
           <input
             type="password"
             value={password}

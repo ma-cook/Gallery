@@ -20,6 +20,8 @@ import {
   deleteImage,
   saveColor,
   fetchColor,
+  saveOrbColor,
+  fetchOrbColor,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
@@ -52,12 +54,20 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
-function SettingsModal({ isOpen, onClose, onColorChange }) {
+function SettingsModal({ isOpen, onClose, onColorChange, onGlowColorChange }) {
   const [color, setColor] = useState('#ffffff');
+  const [glowColor, setGlowColor] = useState('#fff4d2');
 
   const handleColorChange = (event) => {
     setColor(event.target.value);
     onColorChange(event.target.value);
+  };
+
+  const handleGlowColorChange = async (event) => {
+    const newGlowColor = event.target.value;
+    setGlowColor(newGlowColor);
+    await saveOrbColor(newGlowColor); // Save the new glow color to Firebase
+    onGlowColorChange(newGlowColor);
   };
 
   if (!isOpen) return null;
@@ -68,9 +78,10 @@ function SettingsModal({ isOpen, onClose, onColorChange }) {
         position: 'absolute',
         top: '20%',
         left: '20%',
-        background: 'white',
+        background: 'black',
         padding: '20px',
         zIndex: 2,
+        borderRadius: '5px',
       }}
     >
       <h2>Settings</h2>
@@ -78,6 +89,15 @@ function SettingsModal({ isOpen, onClose, onColorChange }) {
         Background and Fog Color:
         <input type="color" value={color} onChange={handleColorChange} />
       </label>
+      <label>
+        Glow Color:
+        <input
+          type="color"
+          value={glowColor}
+          onChange={handleGlowColorChange}
+        />
+      </label>
+
       <button onClick={onClose}>Close</button>
     </div>
   );
@@ -92,6 +112,8 @@ function App() {
   const [interpolationFactor, setInterpolationFactor] = useState(0);
   const [targetPosition, setTargetPosition] = useState(null);
   const [backgroundColor, setBackgroundColor] = useState('white');
+  const [glowColor, setGlowColor] = useState('#fff4d2');
+  const [lightColor, setLightColor] = useState('#fff4d2');
   const lastClickTime = useRef(0);
 
   useEffect(() => {
@@ -118,6 +140,15 @@ function App() {
     };
 
     fetchAndSetColor();
+  }, []);
+
+  useEffect(() => {
+    const fetchAndSetGlowColor = async () => {
+      const fetchedGlowColor = await fetchOrbColor();
+      setGlowColor(fetchedGlowColor);
+    };
+
+    fetchAndSetGlowColor();
   }, []);
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
@@ -223,16 +254,19 @@ function App() {
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
         onColorChange={handleColorChange}
+        onGlowColorChange={setGlowColor}
+        onLightColorChange={setLightColor}
       />
       <Canvas
         style={{ background: backgroundColor }}
         antialias="true"
         pixelratio={window.devicePixelRatio}
+        frameloop="demand"
       >
         <fog attach="fog" args={[backgroundColor, 200, 400]} />
 
         <CustomCamera targetPosition={targetPosition} />
-        <OrbLight />
+        <OrbLight glowColor={glowColor} lightColor={lightColor} />
 
         <Text3DComponent
           triggerTransition={triggerTransition}

@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import FakeGlowMaterial from './FakeGlowMaterial';
 
-const OrbLight = () => {
+const OrbLight = ({ glowColor }) => {
   // Memoize geometry and material to reuse them
   const sphereGeometry = useMemo(() => new THREE.SphereGeometry(2, 16, 32), []);
   const meshMaterial = useMemo(
@@ -20,10 +20,10 @@ const OrbLight = () => {
       distance: 200,
       decay: 0.8,
       position: [0, 0, 0],
-      color: '#fff4d2',
+      color: glowColor,
       intensity: 25,
     }),
-    []
+    [glowColor]
   );
 
   const positions = useMemo(
@@ -46,7 +46,7 @@ const OrbLight = () => {
             material={meshMaterial}
           >
             <pointLight {...lightProps} />
-            <FakeGlowMaterial glowColor="#fff4d2" />
+            <FakeGlowMaterial glowColor={glowColor} />
           </mesh>
         </group>
       ))}
