@@ -9,30 +9,35 @@ const OrbLight = () => {
     () =>
       new THREE.MeshBasicMaterial({
         color: 'white',
-
         opacity: 0.6,
         transparent: true,
       }),
     []
   );
 
-  const lightProps = {
-    distance: 200,
-    decay: 1,
-    position: [0, 0, 0],
-    color: '#fff4d2',
-    intensity: 25,
-  };
+  const lightProps = useMemo(
+    () => ({
+      distance: 200,
+      decay: 1,
+      position: [0, 0, 0],
+      color: '#fff4d2',
+      intensity: 25,
+    }),
+    []
+  );
 
-  const positions = [
-    [-40, 0, 0],
-    [0, 0, 40],
-    [40, 0, 0],
-    [0, 0, -40],
-  ];
+  const positions = useMemo(
+    () => [
+      [-40, 0, 0],
+      [0, 0, 40],
+      [40, 0, 0],
+      [0, 0, -40],
+    ],
+    []
+  );
 
   return (
-    <>
+    <React.Fragment>
       {positions.map((position, index) => (
         <group key={index}>
           <mesh
@@ -45,7 +50,7 @@ const OrbLight = () => {
           </mesh>
         </group>
       ))}
-    </>
+    </React.Fragment>
   );
 };
 

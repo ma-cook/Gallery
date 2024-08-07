@@ -5,14 +5,13 @@ import React, {
   useCallback,
   useMemo,
   Suspense,
+  lazy,
 } from 'react';
 import { useFrame, Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import CustomCamera from './CustomCamera';
 import AuthModal from './AuthModal';
-import ImagePlane from './ImagePlane';
-import RaycasterHandler from './RaycasterHandler';
 import Loader from './Loader';
 import WhitePlane from './WhitePlane';
 import {
@@ -26,8 +25,12 @@ import {
 } from './layoutFunctions';
 import { handleSignIn } from './authFunctions';
 import Text3DComponent from './TextComponent';
-const auth = getAuth();
 import OrbLight from './OrbLight';
+
+const ImagePlane = lazy(() => import('./ImagePlane'));
+const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
+
+const auth = getAuth();
 
 function App() {
   const [images, setImages] = useState([]);
@@ -55,9 +58,7 @@ function App() {
     fetchAndSetImages();
   }, []);
 
-  const sphereRadius = useMemo(() => {
-    return 10 + images.length * 0.5;
-  }, [images.length]);
+  const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
 
   const imagesPositions = useMemo(() => {
     const spherePositions = calculateSpherePositions(images, sphereRadius);
@@ -140,42 +141,38 @@ function App() {
         }
       />
       <Canvas
-        shadows
-        softshadows="true"
         style={{ background: 'black' }}
         antialias="true"
         pixelratio={window.devicePixelRatio}
       >
         <fog attach="fog" args={['black', 200, 400]} />
-        <Suspense>
-          <CustomCamera targetPosition={targetPosition} />
-          <OrbLight />
 
-          <Text3DComponent
-            triggerTransition={triggerTransition}
-            sphereRadius={sphereRadius}
-            setIsAuthModalOpen={setIsAuthModalOpen}
-            images={images}
-          />
-          <Suspense fallback={<Loader />}>
-            {images.map((image, index) => (
-              <ImagePlane
-                key={index}
-                index={index}
-                position={imagesPositions[index]}
-                onClick={() => handleImageClick(index)}
-                images={images.map((img) => img.url)}
-                user={user}
-                onDelete={handleDeleteImage}
-              />
-            ))}
-          </Suspense>
-          <WhitePlane />
+        <CustomCamera targetPosition={targetPosition} />
+        <OrbLight />
+
+        <Text3DComponent
+          triggerTransition={triggerTransition}
+          sphereRadius={sphereRadius}
+          setIsAuthModalOpen={setIsAuthModalOpen}
+        />
+        <Suspense fallback={<Loader />}>
+          {images.map((image, index) => (
+            <ImagePlane
+              key={index}
+              index={index}
+              position={imagesPositions[index]}
+              onClick={() => handleImageClick(index)}
+              images={images.map((img) => img.url)}
+              user={user}
+              onDelete={handleDeleteImage}
+            />
+          ))}
           <RaycasterHandler
             images={imagesPositions}
             handleImageClick={handleImageClick}
           />
         </Suspense>
+        <WhitePlane />
       </Canvas>
     </div>
   );

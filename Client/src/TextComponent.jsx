@@ -9,7 +9,6 @@ function Text3DComponent({
   triggerTransition,
   sphereRadius,
   setIsAuthModalOpen,
-  images, // Add images as a prop
 }) {
   const groupRef1 = useRef();
   const groupRef2 = useRef();
@@ -77,7 +76,7 @@ function Text3DComponent({
 
       setPositionsInitialized(true);
     }
-  }, [sphereRadius, images, positionsInitialized]);
+  }, [sphereRadius, positionsInitialized]);
 
   return (
     <>
