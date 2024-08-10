@@ -1,3 +1,4 @@
+// App.jsx
 import React, {
   useRef,
   useEffect,
@@ -20,8 +21,8 @@ import {
   deleteImage,
   saveColor,
   fetchColor,
-  saveOrbColor,
   fetchOrbColor,
+  fetchTitleOrbColor,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
@@ -30,6 +31,7 @@ import {
 import { handleSignIn } from './authFunctions';
 import Text3DComponent from './TextComponent';
 import OrbLight from './OrbLight';
+import SettingsModal from './SettingsModal'; // Import the SettingsModal component
 
 const ImagePlane = lazy(() => import('./ImagePlane'));
 const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
@@ -54,55 +56,6 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
-function SettingsModal({ isOpen, onClose, onColorChange, onGlowColorChange }) {
-  const [color, setColor] = useState('#ffffff');
-  const [glowColor, setGlowColor] = useState('#fff4d2');
-
-  const handleColorChange = (event) => {
-    setColor(event.target.value);
-    onColorChange(event.target.value);
-  };
-
-  const handleGlowColorChange = async (event) => {
-    const newGlowColor = event.target.value;
-    setGlowColor(newGlowColor);
-    await saveOrbColor(newGlowColor); // Save the new glow color to Firebase
-    onGlowColorChange(newGlowColor);
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: '20%',
-        left: '20%',
-        background: 'black',
-        padding: '20px',
-        zIndex: 2,
-        borderRadius: '5px',
-      }}
-    >
-      <h2>Settings</h2>
-      <label>
-        Background and Fog Color:
-        <input type="color" value={color} onChange={handleColorChange} />
-      </label>
-      <label>
-        Glow Color:
-        <input
-          type="color"
-          value={glowColor}
-          onChange={handleGlowColorChange}
-        />
-      </label>
-
-      <button onClick={onClose}>Close</button>
-    </div>
-  );
-}
-
 function App() {
   const [images, setImages] = useState([]);
   const [user, setUser] = useState(null);
@@ -114,6 +67,7 @@ function App() {
   const [backgroundColor, setBackgroundColor] = useState('white');
   const [glowColor, setGlowColor] = useState('#fff4d2');
   const [lightColor, setLightColor] = useState('#fff4d2');
+  const [titleOrbColor, setTitleOrbColor] = useState('#fff4d2');
   const lastClickTime = useRef(0);
 
   useEffect(() => {
@@ -149,6 +103,15 @@ function App() {
     };
 
     fetchAndSetGlowColor();
+  }, []);
+
+  useEffect(() => {
+    const fetchSetTitleOrbColor = async () => {
+      const fetchedTitleOrbColor = await fetchTitleOrbColor();
+      setTitleOrbColor(fetchedTitleOrbColor);
+    };
+
+    fetchSetTitleOrbColor();
   }, []);
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
@@ -256,6 +219,7 @@ function App() {
         onColorChange={handleColorChange}
         onGlowColorChange={setGlowColor}
         onLightColorChange={setLightColor}
+        onTitleOrbChange={setTitleOrbColor}
       />
       <Canvas
         style={{ background: backgroundColor }}
@@ -272,6 +236,7 @@ function App() {
           triggerTransition={triggerTransition}
           sphereRadius={sphereRadius}
           setIsAuthModalOpen={setIsAuthModalOpen}
+          titleOrbColor={titleOrbColor}
         />
         <Suspense fallback={<Loader />}>
           {images.map((image, index) => (

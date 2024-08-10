@@ -15,6 +15,7 @@ function Text3DComponent({
   triggerTransition,
   sphereRadius,
   setIsAuthModalOpen,
+  titleOrbColor,
 }) {
   const groupRef1 = useRef();
   const groupRef2 = useRef();
@@ -123,10 +124,10 @@ function Text3DComponent({
             distance={200}
             decay={1}
             position={[0, 0, 0]}
-            color="#fff4d2"
+            color={titleOrbColor}
             intensity={10}
           />
-          <FakeGlowMaterial glowColor="#fff4d2" />
+          <FakeGlowMaterial glowColor={titleOrbColor} />
         </mesh>
         <mesh
           ref={cubeRef}
@@ -139,10 +140,10 @@ function Text3DComponent({
             distance={200}
             decay={1}
             position={[0, 0, 0]}
-            color="#fff4d2"
+            color={titleOrbColor}
             intensity={10}
           />
-          <FakeGlowMaterial glowColor="#fff4d2" />
+          <FakeGlowMaterial glowColor={titleOrbColor} />
         </mesh>
       </group>
       <group ref={groupRef2}>
