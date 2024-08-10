@@ -103,3 +103,21 @@ export const fetchTitleOrbColor = async () => {
     return '#fff4d2'; // default color
   }
 };
+
+export const saveTextColor = async (textColor) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'textColor'), {
+    textColor: textColor,
+  });
+};
+
+export const fetchTextColor = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'textColor');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().textColor;
+  } else {
+    return '#fff4d2'; // default color
+  }
+};

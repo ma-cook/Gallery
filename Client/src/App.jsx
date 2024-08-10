@@ -23,6 +23,7 @@ import {
   fetchColor,
   fetchOrbColor,
   fetchTitleOrbColor,
+  fetchTextColor,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
@@ -68,6 +69,7 @@ function App() {
   const [glowColor, setGlowColor] = useState('#fff4d2');
   const [lightColor, setLightColor] = useState('#fff4d2');
   const [titleOrbColor, setTitleOrbColor] = useState('#fff4d2');
+  const [textColor, setTextColor] = useState('#fff4d2');
   const lastClickTime = useRef(0);
 
   useEffect(() => {
@@ -112,6 +114,15 @@ function App() {
     };
 
     fetchSetTitleOrbColor();
+  }, []);
+
+  useEffect(() => {
+    const fetchSetTextColor = async () => {
+      const fetchedTextColor = await fetchTextColor();
+      setTextColor(fetchedTextColor);
+    };
+
+    fetchSetTextColor();
   }, []);
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
@@ -220,6 +231,7 @@ function App() {
         onGlowColorChange={setGlowColor}
         onLightColorChange={setLightColor}
         onTitleOrbChange={setTitleOrbColor}
+        onTextColorChange={setTextColor}
       />
       <Canvas
         style={{ background: backgroundColor }}
@@ -237,6 +249,7 @@ function App() {
           sphereRadius={sphereRadius}
           setIsAuthModalOpen={setIsAuthModalOpen}
           titleOrbColor={titleOrbColor}
+          textColor={textColor}
         />
         <Suspense fallback={<Loader />}>
           {images.map((image, index) => (

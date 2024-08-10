@@ -16,6 +16,7 @@ function Text3DComponent({
   sphereRadius,
   setIsAuthModalOpen,
   titleOrbColor,
+  textColor,
 }) {
   const groupRef1 = useRef();
   const groupRef2 = useRef();
@@ -102,7 +103,7 @@ function Text3DComponent({
           Gallery
           <meshBasicMaterial
             attach="material"
-            color={'white'}
+            color={textColor}
             roughness={1}
             metalness={0}
             intensity={1.2}
@@ -162,8 +163,8 @@ function Text3DComponent({
           Sphere Layout
           <meshStandardMaterial
             attach="material"
-            color="white"
-            emissive="white"
+            color={textColor}
+            emissive={textColor}
           />
         </Text3D>
         <mesh
@@ -189,8 +190,8 @@ function Text3DComponent({
           Plane Layout
           <meshStandardMaterial
             attach="material"
-            color="white"
-            emissive="white"
+            color={textColor}
+            emissive={textColor}
           />
         </Text3D>
         <mesh

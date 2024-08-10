@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { saveOrbColor, saveTitleOrbColor } from './firebaseFunctions';
+import {
+  saveOrbColor,
+  saveTitleOrbColor,
+  saveTextColor,
+} from './firebaseFunctions';
 
 function SettingsModal({
   isOpen,
@@ -7,10 +11,12 @@ function SettingsModal({
   onColorChange,
   onGlowColorChange,
   onTitleOrbChange,
+  onTextColorChange,
 }) {
   const [color, setColor] = useState('#ffffff');
   const [glowColor, setGlowColor] = useState('#fff4d2');
   const [titleOrbColor, setTitleOrbColor] = useState('#fff4d2');
+  const [textColor, setTextColor] = useState('#fff4d2');
 
   const handleColorChange = (event) => {
     setColor(event.target.value);
@@ -29,6 +35,13 @@ function SettingsModal({
     setTitleOrbColor(newTitleOrb);
     await saveTitleOrbColor(newTitleOrb); // Save the new glow color to Firebase
     onTitleOrbChange(newTitleOrb);
+  };
+
+  const handleTextColor = async (event) => {
+    const newTextColor = event.target.value;
+    setTextColor(newTextColor);
+    await saveTextColor(newTextColor); // Save the new glow color to Firebase
+    onTextColorChange(newTextColor);
   };
 
   if (!isOpen) return null;
@@ -61,6 +74,10 @@ function SettingsModal({
       <label>
         Title Orb Lights:
         <input type="color" value={titleOrbColor} onChange={handleTitleOrb} />
+      </label>
+      <label>
+        Text Color:
+        <input type="color" value={textColor} onChange={handleTextColor} />
       </label>
 
       <button onClick={onClose}>Close</button>
