@@ -35,7 +35,6 @@ export const handleFileChange = async (event, user, setImages) => {
   const snapshot = await uploadBytes(storageRef, file);
   const url = await getDownloadURL(snapshot.ref);
 
-  const db = getFirestore();
   const docRef = await addDoc(collection(db, 'images'), { url });
 
   setImages((prevImages) => [...prevImages, { id: docRef.id, url }]);

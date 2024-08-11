@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   saveOrbColor,
   saveTitleOrbColor,
@@ -13,36 +13,54 @@ function SettingsModal({
   onTitleOrbChange,
   onTextColorChange,
 }) {
-  const [color, setColor] = useState('#ffffff');
-  const [glowColor, setGlowColor] = useState('#fff4d2');
-  const [titleOrbColor, setTitleOrbColor] = useState('#fff4d2');
-  const [textColor, setTextColor] = useState('#fff4d2');
+  const [colors, setColors] = useState({
+    color: '#ffffff',
+    glowColor: '#fff4d2',
+    titleOrbColor: '#fff4d2',
+    textColor: '#fff4d2',
+  });
 
-  const handleColorChange = (event) => {
-    setColor(event.target.value);
-    onColorChange(event.target.value);
-  };
+  const handleColorChange = useCallback(
+    (event) => {
+      const newColor = event.target.value;
+      setColors((prevColors) => ({ ...prevColors, color: newColor }));
+      onColorChange(newColor);
+    },
+    [onColorChange]
+  );
 
-  const handleGlowColorChange = async (event) => {
-    const newGlowColor = event.target.value;
-    setGlowColor(newGlowColor);
-    await saveOrbColor(newGlowColor); // Save the new glow color to Firebase
-    onGlowColorChange(newGlowColor);
-  };
+  const handleGlowColorChange = useCallback(
+    async (event) => {
+      const newGlowColor = event.target.value;
+      setColors((prevColors) => ({ ...prevColors, glowColor: newGlowColor }));
+      await saveOrbColor(newGlowColor);
+      onGlowColorChange(newGlowColor);
+    },
+    [onGlowColorChange]
+  );
 
-  const handleTitleOrb = async (event) => {
-    const newTitleOrb = event.target.value;
-    setTitleOrbColor(newTitleOrb);
-    await saveTitleOrbColor(newTitleOrb); // Save the new glow color to Firebase
-    onTitleOrbChange(newTitleOrb);
-  };
+  const handleTitleOrbChange = useCallback(
+    async (event) => {
+      const newTitleOrbColor = event.target.value;
+      setColors((prevColors) => ({
+        ...prevColors,
+        titleOrbColor: newTitleOrbColor,
+      }));
+      await saveTitleOrbColor(newTitleOrbColor);
+      onTitleOrbChange(newTitleOrbColor);
+    },
+    [onTitleOrbChange]
+  );
 
-  const handleTextColor = async (event) => {
-    const newTextColor = event.target.value;
-    setTextColor(newTextColor);
-    await saveTextColor(newTextColor); // Save the new glow color to Firebase
-    onTextColorChange(newTextColor);
-  };
+  const handleTextColorChange = useCallback(
+    async (event) => {
+      const newTextColor = event.target.value;
+      setColors((prevColors) => ({ ...prevColors, textColor: newTextColor }));
+      await saveTextColor(newTextColor);
+      onTextColorChange(newTextColor);
+    },
+    [onTextColorChange]
+  );
 
   if (!isOpen) return null;
 
@@ -61,25 +79,32 @@ function SettingsModal({
       <h2>Settings</h2>
       <label>
         Background and Fog Color:
-        <input type="color" value={color} onChange={handleColorChange} />
+        <input type="color" value={colors.color} onChange={handleColorChange} />
       </label>
       <label>
         Orb Lights:
         <input
           type="color"
-          value={glowColor}
+          value={colors.glowColor}
           onChange={handleGlowColorChange}
         />
       </label>
       <label>
         Title Orb Lights:
-        <input type="color" value={titleOrbColor} onChange={handleTitleOrb} />
+        <input
+          type="color"
+          value={colors.titleOrbColor}
+          onChange={handleTitleOrbChange}
+        />
       </label>
       <label>
         Text Color:
-        <input type="color" value={textColor} onChange={handleTextColor} />
+        <input
+          type="color"
+          value={colors.textColor}
+          onChange={handleTextColorChange}
+        />
       </label>
-
       <button onClick={onClose}>Close</button>
     </div>
   );

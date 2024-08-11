@@ -1,4 +1,3 @@
-// App.jsx
 import React, {
   useRef,
   useEffect,
@@ -32,14 +31,13 @@ import {
 import { handleSignIn } from './authFunctions';
 import Text3DComponent from './TextComponent';
 import OrbLight from './OrbLight';
-import SettingsModal from './SettingsModal'; // Import the SettingsModal component
+import SettingsModal from './SettingsModal';
 
 const ImagePlane = lazy(() => import('./ImagePlane'));
 const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
 
 const auth = getAuth();
 
-// Object Pool for THREE.Vector3
 class Vector3Pool {
   constructor() {
     this.pool = [];
@@ -81,48 +79,23 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const fetchAndSetImages = async () => {
-      const imagesData = await fetchImages();
+    const fetchData = async () => {
+      const [imagesData, backgroundColor, glowColor, titleOrbColor, textColor] =
+        await Promise.all([
+          fetchImages(),
+          fetchColor(),
+          fetchOrbColor(),
+          fetchTitleOrbColor(),
+          fetchTextColor(),
+        ]);
       setImages(imagesData);
-    };
-
-    fetchAndSetImages();
-  }, []);
-
-  useEffect(() => {
-    const fetchAndSetColor = async () => {
-      const backgroundColor = await fetchColor();
       setBackgroundColor(backgroundColor);
+      setGlowColor(glowColor);
+      setTitleOrbColor(titleOrbColor);
+      setTextColor(textColor);
     };
 
-    fetchAndSetColor();
-  }, []);
-
-  useEffect(() => {
-    const fetchAndSetGlowColor = async () => {
-      const fetchedGlowColor = await fetchOrbColor();
-      setGlowColor(fetchedGlowColor);
-    };
-
-    fetchAndSetGlowColor();
-  }, []);
-
-  useEffect(() => {
-    const fetchSetTitleOrbColor = async () => {
-      const fetchedTitleOrbColor = await fetchTitleOrbColor();
-      setTitleOrbColor(fetchedTitleOrbColor);
-    };
-
-    fetchSetTitleOrbColor();
-  }, []);
-
-  useEffect(() => {
-    const fetchSetTextColor = async () => {
-      const fetchedTextColor = await fetchTextColor();
-      setTextColor(fetchedTextColor);
-    };
-
-    fetchSetTextColor();
+    fetchData();
   }, []);
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
@@ -189,10 +162,10 @@ function App() {
     [images]
   );
 
-  const handleColorChange = async (color) => {
+  const handleColorChange = useCallback(async (color) => {
     setBackgroundColor(color);
     await saveColor(color);
-  };
+  }, []);
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>

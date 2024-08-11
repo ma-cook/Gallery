@@ -16,7 +16,7 @@ const WhitePlane = React.memo(() => {
       {planeGeometry}
       <MeshReflectorMaterial
         resolution={512}
-        mirror={0.95}
+        mirror={0.1}
         mixBlur={0.1}
         mixStrength={4}
         depthScale={10} // Decreased depthScale
