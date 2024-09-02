@@ -68,6 +68,7 @@ function App() {
   const [lightColor, setLightColor] = useState('#fff4d2');
   const [titleOrbColor, setTitleOrbColor] = useState('#fff4d2');
   const [textColor, setTextColor] = useState('#fff4d2');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const lastClickTime = useRef(0);
 
   useEffect(() => {
@@ -167,13 +168,39 @@ function App() {
     await saveColor(color);
   }, []);
 
+  const handleFileChangeWithProgress = useCallback(
+    async (event, user, setImages) => {
+      const file = event.target.files[0];
+      if (file) {
+        const uploadTask = handleFileChange(event, user, setImages);
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(progress);
+          },
+          (error) => {
+            console.error('Upload failed:', error);
+          },
+          () => {
+            setUploadProgress(0); // Reset progress after upload completes
+          }
+        );
+      }
+    },
+    []
+  );
+
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <input
         type="file"
         id="fileInput"
         style={{ display: 'none' }}
-        onChange={(event) => handleFileChange(event, user, setImages)}
+        onChange={(event) =>
+          handleFileChangeWithProgress(event, user, setImages)
+        }
         accept="image/*"
       />
       <div style={{ position: 'absolute', zIndex: 1 }}>
@@ -181,6 +208,7 @@ function App() {
           <>
             <button
               onClick={() => document.getElementById('fileInput').click()}
+              disabled={uploadProgress > 0} // Disable button while uploading
             >
               Upload Image
             </button>
@@ -206,6 +234,7 @@ function App() {
         onTitleOrbChange={setTitleOrbColor}
         onTextColorChange={setTextColor}
       />
+      {uploadProgress > 0 && <Loader progress={uploadProgress} />}
       <Canvas
         style={{ background: backgroundColor }}
         antialias="true"

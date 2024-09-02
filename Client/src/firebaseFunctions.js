@@ -11,7 +11,7 @@ import {
 import {
   getStorage,
   ref,
-  uploadBytes,
+  uploadBytesResumable, // Add this import
   deleteObject,
   getDownloadURL,
 } from 'firebase/storage';
@@ -22,22 +22,34 @@ export const fetchImages = async () => {
   return querySnapshot.docs.map((doc) => ({ id: doc.id, url: doc.data().url }));
 };
 
-export const handleFileChange = async (event, user, setImages) => {
-  if (!user) {
-    alert('You must be signed in to upload images.');
-    return;
-  }
+export const handleFileChange = (event, user, setImages) => {
   const file = event.target.files[0];
   if (!file) return;
 
   const storage = getStorage();
   const storageRef = ref(storage, `images/${file.name}`);
-  const snapshot = await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(snapshot.ref);
+  const uploadTask = uploadBytesResumable(storageRef, file);
 
-  const docRef = await addDoc(collection(db, 'images'), { url });
+  uploadTask.on(
+    'state_changed',
+    (snapshot) => {
+      // Handle progress
+    },
+    (error) => {
+      // Handle error
+      console.error('Upload failed:', error);
+    },
+    async () => {
+      // Handle successful upload
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+      setImages((prevImages) => [
+        ...prevImages,
+        { url: downloadURL, id: file.name },
+      ]);
+    }
+  );
 
-  setImages((prevImages) => [...prevImages, { id: docRef.id, url }]);
+  return uploadTask;
 };
 
 export const deleteImage = async (imageId, imageUrl) => {
