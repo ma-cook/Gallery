@@ -22,8 +22,8 @@ export const fetchImages = async () => {
   return querySnapshot.docs.map((doc) => ({ id: doc.id, url: doc.data().url }));
 };
 
-export const handleFileChange = (event, user, setImages) => {
-  const file = event.target.files[0];
+export const handleFileChange = (file, user, setImages) => {
+  // Changed 'event' to 'file'
   if (!file) return;
 
   const storage = getStorage();
@@ -33,18 +33,25 @@ export const handleFileChange = (event, user, setImages) => {
   uploadTask.on(
     'state_changed',
     (snapshot) => {
-      // Handle progress
+      // Handle progress - App.jsx will handle displaying progress for the current file
     },
     (error) => {
       // Handle error
-      console.error('Upload failed:', error);
+      console.error('Upload failed for file:', file.name, error);
     },
     async () => {
       // Handle successful upload
       const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+      const imageDoc = {
+        url: downloadURL,
+        name: file.name,
+        uploadedAt: new Date(),
+      };
+      const docRef = await addDoc(collection(db, 'images'), imageDoc);
+
       setImages((prevImages) => [
         ...prevImages,
-        { url: downloadURL, id: file.name },
+        { url: downloadURL, id: docRef.id }, // Use Firestore generated doc ID
       ]);
     }
   );

@@ -170,23 +170,28 @@ function App() {
 
   const handleFileChangeWithProgress = useCallback(
     async (event, user, setImages) => {
-      const file = event.target.files[0];
-      if (file) {
-        const uploadTask = handleFileChange(event, user, setImages);
-        uploadTask.on(
-          'state_changed',
-          (snapshot) => {
-            const progress =
-              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-          },
-          (error) => {
-            console.error('Upload failed:', error);
-          },
-          () => {
-            setUploadProgress(0); // Reset progress after upload completes
-          }
-        );
+      const files = event.target.files;
+      if (files && files.length > 0) {
+        for (const file of files) {
+          const uploadTask = handleFileChange(file, user, setImages); // Pass file directly
+          uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+              const progress =
+                (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress); // This will show progress for the current file
+            },
+            (error) => {
+              console.error('Upload failed for file:', file.name, error);
+              // Optionally, handle per-file error
+            },
+            () => {
+              // Optionally, do something after each file is uploaded
+              console.log('Upload complete for file:', file.name);
+            }
+          );
+        }
+        setUploadProgress(0); // Reset progress after all files are processed
       }
     },
     []
@@ -202,6 +207,7 @@ function App() {
           handleFileChangeWithProgress(event, user, setImages)
         }
         accept="image/*"
+        multiple // Allow multiple file selection
       />
       <div style={{ position: 'absolute', zIndex: 1 }}>
         {user && (
