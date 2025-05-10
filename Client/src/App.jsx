@@ -7,9 +7,10 @@ import React, {
   Suspense,
   lazy,
 } from 'react';
-import { useFrame, Canvas } from '@react-three/fiber';
+import { useFrame, Canvas, useThree } from '@react-three/fiber'; // Added useThree
 import * as THREE from 'three';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
+import { Bvh } from '@react-three/drei'; // Import Bvh
 import CustomCamera from './CustomCamera';
 import AuthModal from './AuthModal';
 import Loader from './Loader';
@@ -32,8 +33,8 @@ import { handleSignIn } from './authFunctions';
 import Text3DComponent from './TextComponent';
 import OrbLight from './OrbLight';
 import SettingsModal from './SettingsModal';
+import ImagePlane from './ImagePlane'; // Direct import for ImagePlane
 
-const ImagePlane = lazy(() => import('./ImagePlane'));
 const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
 
 const auth = getAuth();
@@ -61,13 +62,30 @@ const VisibilityUpdater = ({
   onVisibleIndicesChange,
   threshold,
 }) => {
+  const { invalidate } = useThree(); // Get invalidate from useThree
   const tempImageVec = useMemo(() => new THREE.Vector3(), []);
+  const frameCounter = useRef(0);
+  const initialUpdateDone = useRef(false); // To track if the first update and invalidation has occurred
 
   useFrame(({ camera }) => {
+    frameCounter.current++;
+
+    // Run the first update immediately, then throttle subsequent updates
+    if (initialUpdateDone.current && frameCounter.current % 5 !== 0) {
+      return;
+    }
+
     if (!allImagePositions || allImagePositions.length === 0) {
-      onVisibleIndicesChange((currentVisibleIndices) =>
-        currentVisibleIndices.length === 0 ? currentVisibleIndices : []
-      );
+      let changed = false;
+      onVisibleIndicesChange((currentVisibleIndices) => {
+        if (currentVisibleIndices.length === 0) return currentVisibleIndices;
+        changed = true;
+        return [];
+      });
+      if (changed || !initialUpdateDone.current) {
+        invalidate(); // Invalidate if visibility changed or it's the initial run
+      }
+      initialUpdateDone.current = true; // Mark initial update as done
       return;
     }
 
@@ -84,6 +102,7 @@ const VisibilityUpdater = ({
       }
     });
 
+    let changed = false;
     onVisibleIndicesChange((currentVisibleIndices) => {
       if (
         currentVisibleIndices.length === newVisibleIndices.length &&
@@ -93,8 +112,14 @@ const VisibilityUpdater = ({
       ) {
         return currentVisibleIndices;
       }
+      changed = true;
       return newVisibleIndices;
     });
+
+    if (changed || !initialUpdateDone.current) {
+      invalidate(); // Invalidate if visibility changed or it's the initial run
+    }
+    initialUpdateDone.current = true; // Mark initial update as done
   });
   return null;
 };
@@ -115,7 +140,7 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const lastClickTime = useRef(0);
   const [visibleImageIndices, setVisibleImageIndices] = useState([]);
-  const VISIBLE_DISTANCE_THRESHOLD = 150; // Increased from 75
+  const VISIBLE_DISTANCE_THRESHOLD = 550; // Increased from 75
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
 
@@ -132,12 +157,6 @@ function App() {
     });
   }, [interpolationFactor, images, sphereRadius]);
 
-  useEffect(() => {}, [images]);
-
-  useEffect(() => {}, [imagesPositions]);
-
-  useEffect(() => {}, [visibleImageIndices]);
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -147,6 +166,34 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const handleNewImagesData = (newImagesData) => {
+      setImages((prevImages) => {
+        // Basic check: if lengths are different, it's a definite change.
+        if (!prevImages || prevImages.length !== newImagesData.length) {
+          return newImagesData;
+        }
+
+        // More specific check: compare relevant properties for positioning.
+        // This example assumes 'id' and 'url' are critical.
+        // Add any other properties your layoutFunctions might depend on.
+        const hasRelevantChange = newImagesData.some((newImg, i) => {
+          const oldImg = prevImages[i];
+          // If oldImg doesn't exist (shouldn't happen if lengths match), or IDs/URLs differ.
+          return (
+            !oldImg || newImg.id !== oldImg.id || newImg.url !== oldImg.url
+          );
+          // Add other properties like: || newImg.someLayoutProperty !== oldImg.someLayoutProperty
+        });
+
+        if (hasRelevantChange) {
+          return newImagesData;
+        } else {
+          // If no relevant change, return the previous state to keep array reference stable.
+          return prevImages;
+        }
+      });
+    };
+
     const fetchData = async () => {
       const [
         imagesData,
@@ -161,7 +208,8 @@ function App() {
         fetchTitleOrbColor(),
         fetchTextColor(),
       ]);
-      setImages(imagesData);
+      // Use the new handler to set images data
+      handleNewImagesData(imagesData);
       setBackgroundColor(backgroundColorData);
       setGlowColor(glowColorData);
       setTitleOrbColor(titleOrbColorData);
@@ -360,37 +408,39 @@ function App() {
           textColor={textColor}
         />
         <Suspense fallback={<Loader />}>
-          {images.length > 0 &&
-            imagesPositions.length > 0 &&
-            visibleImageIndices.map((imageIndex) => {
-              const image = images[imageIndex];
-              const position = imagesPositions[imageIndex];
+          <Bvh>
+            {images.length > 0 && imagesPositions.length > 0
+              ? visibleImageIndices.map((imageIndex) => {
+                  const image = images[imageIndex];
+                  const position = imagesPositions[imageIndex];
 
-              if (!image || !position) {
-                return null;
-              }
+                  if (!image || !position) {
+                    return null;
+                  }
 
-              const key = image.id
-                ? `image-${image.id}`
-                : `image-${imageIndex}`;
-              const imageUrl = image.url;
+                  const key = image.id
+                    ? `image-${image.id}`
+                    : `image-${imageIndex}`;
+                  const imageUrl = image.url;
 
-              if (!imageUrl) {
-                return null;
-              }
+                  if (!imageUrl) {
+                    return null;
+                  }
 
-              return (
-                <ImagePlane
-                  key={key}
-                  originalIndex={imageIndex}
-                  position={position}
-                  onClick={() => handleImageClick(imageIndex)}
-                  imageUrl={imageUrl}
-                  user={user}
-                  onDelete={handleDeleteImage}
-                />
-              );
-            })}
+                  return (
+                    <ImagePlane
+                      key={key}
+                      originalIndex={imageIndex}
+                      position={position}
+                      onClick={handleImageClick}
+                      imageUrl={imageUrl}
+                      user={user}
+                      onDelete={handleDeleteImage}
+                    />
+                  );
+                })
+              : null}
+          </Bvh>
           <RaycasterHandler
             images={imagesPositions}
             handleImageClick={handleImageClick}

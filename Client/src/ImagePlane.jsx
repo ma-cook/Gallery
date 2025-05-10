@@ -1,33 +1,61 @@
 import React, { forwardRef, useRef, useEffect, useState, useMemo } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
+import { useFrame, useLoader, useThree } from '@react-three/fiber'; // Added useThree
 import { TextureLoader } from 'three';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
 
 const ImagePlane = forwardRef(
-  ({ originalIndex, position, onClick, imageUrl, user, onDelete }, ref) => {
-    const texture = useLoader(TextureLoader, imageUrl);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.flipY = false;
+  (
+    { originalIndex, position, onClick, imageUrl, user, onDelete },
+    forwardedRef
+  ) => {
+    const { invalidate } = useThree(); // Get invalidate function
 
-    const meshRef = useRef();
-    const [boxDimensions, setBoxDimensions] = useState([1, 1]);
+    const texture = useLoader(TextureLoader, imageUrl, (loadedTexture) => {
+      // This callback runs when the texture is loaded
+      if (loadedTexture) {
+        invalidate(); // Invalidate to ensure the frame re-renders with the new texture
+      }
+    });
 
+    // Effect to invalidate when imageUrl changes, ensuring the component re-renders
+    // promptly in frameloop="demand" mode, even before the texture is fully loaded.
     useEffect(() => {
-      // It's important to capture the texture in the effect setup phase
-      // because the 'texture' variable from useLoader can change.
+      if (imageUrl) {
+        invalidate();
+      }
+    }, [imageUrl, invalidate]);
+
+    const internalMeshRef = useRef();
+    const meshRef = forwardedRef || internalMeshRef; // Use forwardedRef if provided, else internal
+
+    const [boxDimensions, setBoxDimensions] = useState([1, 1]);
+    const [isHovered, setIsHovered] = useState(false); // For hover state
+
+    // Effect for setting texture properties
+    useEffect(() => {
+      if (texture) {
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.flipY = false;
+      }
+    }, [texture]);
+
+    // Effect for texture disposal
+    useEffect(() => {
       const currentTexture = texture;
       return () => {
         if (currentTexture) {
           currentTexture.dispose();
         }
       };
-    }, [texture]); // This effect runs when 'texture' changes, and cleans up the previous texture.
+    }, [texture]);
 
+    // Effect for calculating box dimensions based on texture aspect ratio
     useEffect(() => {
       if (
+        texture && // Ensure texture is loaded
         texture.image &&
         texture.image.naturalWidth &&
         texture.image.naturalHeight
@@ -58,7 +86,7 @@ const ImagePlane = forwardRef(
           return prevDimensions;
         });
       }
-    }, [texture]);
+    }, [texture]); // Depend on texture
 
     const boxDepth = 0.05;
 
@@ -74,41 +102,54 @@ const ImagePlane = forwardRef(
       [texture]
     );
 
-    const direction = useMemo(() => new THREE.Vector3(), []);
-
     useFrame(({ camera }) => {
       if (meshRef.current) {
-        direction
-          .subVectors(meshRef.current.position, camera.position)
-          .normalize();
+        // Simplified: lookAt directly, no need for separate direction vector calculation
         meshRef.current.lookAt(camera.position);
-        meshRef.current.rotation.z += Math.PI;
+        meshRef.current.rotation.z += Math.PI; // Adjust rotation to make +Z face camera
       }
     });
 
-    const handleDelete = () => onDelete(originalIndex);
+    const handleDelete = (e) => {
+      e.stopPropagation(); // Prevent click from bubbling to the mesh's onClick
+      onDelete(originalIndex);
+    };
+
+    const handlePointerOver = (e) => {
+      e.stopPropagation();
+      setIsHovered(true);
+    };
+
+    const handlePointerOut = (e) => {
+      e.stopPropagation();
+      setIsHovered(false);
+    };
 
     return (
       <mesh
         position={position}
-        ref={ref || meshRef}
+        ref={meshRef}
         castShadow
         material={materials}
         userData={{ originalIndex }}
-        onClick={onClick}
+        onClick={onClick} // Main click action for the image
+        onPointerOver={handlePointerOver}
+        onPointerOut={handlePointerOut}
       >
         <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
-        {user && (
-          <Html
-            position={[
-              boxDimensions[0] / 2 - 0.5,
-              boxDimensions[1] / 2 - 0.5,
-              0.1,
-            ]}
-          >
-            <DeleteButton onClick={handleDelete} />
-          </Html>
-        )}
+        {user &&
+          isHovered && ( // Show delete button only if user exists and image is hovered
+            <Html
+              position={[
+                boxDimensions[0] / 2 - 0.5,
+                boxDimensions[1] / 2 - 0.5,
+                boxDepth / 2 + 0.01, // Position slightly in front of the face
+              ]}
+              zIndexRange={[100, 0]} // Ensure it's rendered on top
+            >
+              <DeleteButton onClick={handleDelete} />
+            </Html>
+          )}
       </mesh>
     );
   }
