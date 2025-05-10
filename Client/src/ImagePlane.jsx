@@ -6,14 +6,25 @@ import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
 
 const ImagePlane = forwardRef(
-  ({ index, position, onClick, images, user, onDelete }, ref) => {
-    const texture = useLoader(TextureLoader, images[index]);
+  ({ originalIndex, position, onClick, imageUrl, user, onDelete }, ref) => {
+    const texture = useLoader(TextureLoader, imageUrl);
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     texture.flipY = false;
 
     const meshRef = useRef();
     const [boxDimensions, setBoxDimensions] = useState([1, 1]);
+
+    useEffect(() => {
+      // It's important to capture the texture in the effect setup phase
+      // because the 'texture' variable from useLoader can change.
+      const currentTexture = texture;
+      return () => {
+        if (currentTexture) {
+          currentTexture.dispose();
+        }
+      };
+    }, [texture]); // This effect runs when 'texture' changes, and cleans up the previous texture.
 
     useEffect(() => {
       if (
@@ -75,7 +86,7 @@ const ImagePlane = forwardRef(
       }
     });
 
-    const handleDelete = () => onDelete(index);
+    const handleDelete = () => onDelete(originalIndex);
 
     return (
       <mesh
@@ -83,7 +94,7 @@ const ImagePlane = forwardRef(
         ref={ref || meshRef}
         castShadow
         material={materials}
-        userData={{ index }}
+        userData={{ originalIndex }}
         onClick={onClick}
       >
         <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
@@ -103,4 +114,4 @@ const ImagePlane = forwardRef(
   }
 );
 
-export default ImagePlane;
+export default React.memo(ImagePlane);

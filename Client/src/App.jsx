@@ -55,6 +55,50 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
+// Helper component for visibility updates
+const VisibilityUpdater = ({
+  allImagePositions,
+  onVisibleIndicesChange,
+  threshold,
+}) => {
+  const tempImageVec = useMemo(() => new THREE.Vector3(), []);
+
+  useFrame(({ camera }) => {
+    if (!allImagePositions || allImagePositions.length === 0) {
+      onVisibleIndicesChange((currentVisibleIndices) =>
+        currentVisibleIndices.length === 0 ? currentVisibleIndices : []
+      );
+      return;
+    }
+
+    const newVisibleIndices = [];
+    const cameraPosition = camera.position;
+
+    allImagePositions.forEach((posArray, index) => {
+      if (!posArray) return;
+      tempImageVec.fromArray(posArray);
+      const distance = cameraPosition.distanceTo(tempImageVec);
+
+      if (distance < threshold) {
+        newVisibleIndices.push(index);
+      }
+    });
+
+    onVisibleIndicesChange((currentVisibleIndices) => {
+      if (
+        currentVisibleIndices.length === newVisibleIndices.length &&
+        currentVisibleIndices.every(
+          (val, idx) => val === newVisibleIndices[idx]
+        )
+      ) {
+        return currentVisibleIndices;
+      }
+      return newVisibleIndices;
+    });
+  });
+  return null;
+};
+
 function App() {
   const [images, setImages] = useState([]);
   const [user, setUser] = useState(null);
@@ -70,34 +114,8 @@ function App() {
   const [textColor, setTextColor] = useState('#fff4d2');
   const [uploadProgress, setUploadProgress] = useState(0);
   const lastClickTime = useRef(0);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const [imagesData, backgroundColor, glowColor, titleOrbColor, textColor] =
-        await Promise.all([
-          fetchImages(),
-          fetchColor(),
-          fetchOrbColor(),
-          fetchTitleOrbColor(),
-          fetchTextColor(),
-        ]);
-      setImages(imagesData);
-      setBackgroundColor(backgroundColor);
-      setGlowColor(glowColor);
-      setTitleOrbColor(titleOrbColor);
-      setTextColor(textColor);
-    };
-
-    fetchData();
-  }, []);
+  const [visibleImageIndices, setVisibleImageIndices] = useState([]);
+  const VISIBLE_DISTANCE_THRESHOLD = 150; // Increased from 75
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
 
@@ -113,6 +131,45 @@ function App() {
       return result;
     });
   }, [interpolationFactor, images, sphereRadius]);
+
+  useEffect(() => {}, [images]);
+
+  useEffect(() => {}, [imagesPositions]);
+
+  useEffect(() => {}, [visibleImageIndices]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const [
+        imagesData,
+        backgroundColorData,
+        glowColorData,
+        titleOrbColorData,
+        textColorData,
+      ] = await Promise.all([
+        fetchImages(),
+        fetchColor(),
+        fetchOrbColor(),
+        fetchTitleOrbColor(),
+        fetchTextColor(),
+      ]);
+      setImages(imagesData);
+      setBackgroundColor(backgroundColorData);
+      setGlowColor(glowColorData);
+      setTitleOrbColor(titleOrbColorData);
+      setTextColor(textColorData);
+    };
+
+    fetchData();
+  }, []);
 
   const triggerTransition = useCallback((targetLayout) => {
     setLayout(targetLayout);
@@ -146,8 +203,7 @@ function App() {
           const newTargetPosition = vector3Pool
             .acquire()
             .fromArray(imagePosition);
-          console.log('Setting target position:', newTargetPosition);
-          setTargetPosition(newTargetPosition);
+          vector3Pool.release(newTargetPosition);
         }
       }
     },
@@ -171,31 +227,56 @@ function App() {
   const handleFileChangeWithProgress = useCallback(
     async (event, user, setImages) => {
       const files = event.target.files;
-      if (files && files.length > 0) {
-        for (const file of files) {
-          const uploadTask = handleFileChange(file, user, setImages); // Pass file directly
+      if (!files || files.length === 0) {
+        setUploadProgress(0); // Reset if no files selected
+        return;
+      }
+
+      setUploadProgress(1); // Indicate that uploading has started
+
+      const uploadPromises = Array.from(files).map((file) => {
+        return new Promise((resolve) => {
+          const uploadTask = handleFileChange(file, user, setImages);
+
           uploadTask.on(
             'state_changed',
             (snapshot) => {
               const progress =
                 (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(progress); // This will show progress for the current file
+              setUploadProgress(progress); // Shows progress of the currently reporting file
             },
             (error) => {
-              console.error('Upload failed for file:', file.name, error);
-              // Optionally, handle per-file error
+              resolve({ success: false, file: file.name, error });
             },
             () => {
-              // Optionally, do something after each file is uploaded
-              console.log('Upload complete for file:', file.name);
+              resolve({ success: true, file: file.name });
             }
           );
+        });
+      });
+
+      try {
+        const results = await Promise.all(uploadPromises);
+        const allSucceeded = results.every((r) => r.success);
+        if (allSucceeded) {
+        } else {
         }
-        setUploadProgress(0); // Reset progress after all files are processed
+      } catch (error) {
+      } finally {
+        setUploadProgress(0); // Hide the progress indicator.
       }
     },
-    []
+    [] // Dependencies are correct as user and setImages are passed as arguments.
+    // setUploadProgress is a stable state setter.
   );
+
+  const handleVisibleIndicesChange = useCallback((newIndicesOrCallback) => {
+    if (typeof newIndicesOrCallback === 'function') {
+      setVisibleImageIndices(newIndicesOrCallback);
+    } else {
+      setVisibleImageIndices(newIndicesOrCallback);
+    }
+  }, []);
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -207,14 +288,14 @@ function App() {
           handleFileChangeWithProgress(event, user, setImages)
         }
         accept="image/*"
-        multiple // Allow multiple file selection
+        multiple
       />
       <div style={{ position: 'absolute', zIndex: 1 }}>
         {user && (
           <>
             <button
               onClick={() => document.getElementById('fileInput').click()}
-              disabled={uploadProgress > 0} // Disable button while uploading
+              disabled={uploadProgress > 0}
             >
               Upload Image
             </button>
@@ -240,7 +321,26 @@ function App() {
         onTitleOrbChange={setTitleOrbColor}
         onTextColorChange={setTextColor}
       />
-      {uploadProgress > 0 && <Loader progress={uploadProgress} />}
+      {/* Replace R3F Loader with a simple HTML div for upload progress */}
+      {uploadProgress > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            color: textColor, // Using existing textColor state for consistency
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            padding: '15px 25px',
+            borderRadius: '8px',
+            fontSize: '1.2em',
+            zIndex: 1000, // Ensure it's on top of other UI elements but below modals if necessary
+            textAlign: 'center',
+          }}
+        >
+          Uploading: {Math.round(uploadProgress)} %
+        </div>
+      )}
       <Canvas
         style={{ background: backgroundColor }}
         antialias="true"
@@ -260,21 +360,48 @@ function App() {
           textColor={textColor}
         />
         <Suspense fallback={<Loader />}>
-          {images.map((image, index) => (
-            <ImagePlane
-              key={index}
-              index={index}
-              position={imagesPositions[index]}
-              onClick={() => handleImageClick(index)}
-              images={images.map((img) => img.url)}
-              user={user}
-              onDelete={handleDeleteImage}
-            />
-          ))}
+          {images.length > 0 &&
+            imagesPositions.length > 0 &&
+            visibleImageIndices.map((imageIndex) => {
+              const image = images[imageIndex];
+              const position = imagesPositions[imageIndex];
+
+              if (!image || !position) {
+                return null;
+              }
+
+              const key = image.id
+                ? `image-${image.id}`
+                : `image-${imageIndex}`;
+              const imageUrl = image.url;
+
+              if (!imageUrl) {
+                return null;
+              }
+
+              return (
+                <ImagePlane
+                  key={key}
+                  originalIndex={imageIndex}
+                  position={position}
+                  onClick={() => handleImageClick(imageIndex)}
+                  imageUrl={imageUrl}
+                  user={user}
+                  onDelete={handleDeleteImage}
+                />
+              );
+            })}
           <RaycasterHandler
             images={imagesPositions}
             handleImageClick={handleImageClick}
           />
+          {images.length > 0 && imagesPositions.length > 0 && (
+            <VisibilityUpdater
+              allImagePositions={imagesPositions}
+              onVisibleIndicesChange={handleVisibleIndicesChange}
+              threshold={VISIBLE_DISTANCE_THRESHOLD}
+            />
+          )}
         </Suspense>
         <WhitePlane />
       </Canvas>

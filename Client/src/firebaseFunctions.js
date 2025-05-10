@@ -34,25 +34,33 @@ export const handleFileChange = (file, user, setImages) => {
     'state_changed',
     (snapshot) => {
       // Handle progress - App.jsx will handle displaying progress for the current file
+      const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
     },
     (error) => {
       // Handle error
-      console.error('Upload failed for file:', file.name, error);
     },
     async () => {
       // Handle successful upload
-      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-      const imageDoc = {
-        url: downloadURL,
-        name: file.name,
-        uploadedAt: new Date(),
-      };
-      const docRef = await addDoc(collection(db, 'images'), imageDoc);
+      try {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        const imageDoc = {
+          url: downloadURL,
+          name: file.name, // Storing the file name
+          uploadedAt: new Date(),
+          userId: user ? user.uid : null, // Optionally store user ID
+        };
+        const docRef = await addDoc(collection(db, 'images'), imageDoc);
 
-      setImages((prevImages) => [
-        ...prevImages,
-        { url: downloadURL, id: docRef.id }, // Use Firestore generated doc ID
-      ]);
+        const newImageData = {
+          url: downloadURL,
+          id: docRef.id,
+          name: file.name,
+        };
+        setImages((prevImages) => {
+          const updatedImages = [...prevImages, newImageData];
+          return updatedImages;
+        });
+      } catch (error) {}
     }
   );
 
