@@ -6,11 +6,20 @@ import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
 
 const ImagePlane = forwardRef(
-  ({ originalIndex, position, onClick, imageUrl, user, onDelete }, ref) => {
-    const texture = useLoader(TextureLoader, imageUrl);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.flipY = false;
+  (
+    { originalIndex, position, onClick, imageUrl, user, onDelete, onError },
+    ref
+  ) => {
+    const texture = useLoader(TextureLoader, imageUrl, undefined, (error) => {
+      console.error('Error loading texture:', error);
+      if (onError) onError(error);
+    });
+
+    if (texture) {
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      texture.flipY = false;
+    }
 
     const meshRef = useRef();
     const [boxDimensions, setBoxDimensions] = useState([1, 1]);

@@ -33,7 +33,7 @@ import Text3DComponent from './TextComponent';
 import OrbLight from './OrbLight';
 import SettingsModal from './SettingsModal';
 
-const ImagePlane = lazy(() => import('./ImagePlane'));
+const LazyImagePlane = lazy(() => import('./LazyImagePlane'));
 const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
 
 const auth = getAuth();
@@ -62,18 +62,30 @@ const VisibilityUpdater = ({
   threshold,
 }) => {
   const tempImageVec = useMemo(() => new THREE.Vector3(), []);
+  const lastVisibleIndices = useRef([]);
+
+  // When an image is loaded, we don't want to remove it from the visible indices
+  // until it's definitely out of view for a while
+  const outOfViewCounters = useRef({});
+  const OUT_OF_VIEW_THRESHOLD = 30; // frames
 
   useFrame(({ camera }) => {
     if (!allImagePositions || allImagePositions.length === 0) {
-      onVisibleIndicesChange((currentVisibleIndices) =>
-        currentVisibleIndices.length === 0 ? currentVisibleIndices : []
-      );
+      onVisibleIndicesChange([]);
       return;
     }
 
     const newVisibleIndices = [];
     const cameraPosition = camera.position;
 
+    // Update counters for all indices
+    lastVisibleIndices.current.forEach((index) => {
+      if (!outOfViewCounters.current[index]) {
+        outOfViewCounters.current[index] = 0;
+      }
+    });
+
+    // Check which images are in view
     allImagePositions.forEach((posArray, index) => {
       if (!posArray) return;
       tempImageVec.fromArray(posArray);
@@ -81,21 +93,48 @@ const VisibilityUpdater = ({
 
       if (distance < threshold) {
         newVisibleIndices.push(index);
+        // Reset the counter when the image is in view
+        outOfViewCounters.current[index] = 0;
+      } else if (outOfViewCounters.current[index] !== undefined) {
+        // Increment counter for images that were visible but now out of view
+        outOfViewCounters.current[index]++;
       }
     });
 
-    onVisibleIndicesChange((currentVisibleIndices) => {
-      if (
-        currentVisibleIndices.length === newVisibleIndices.length &&
-        currentVisibleIndices.every(
-          (val, idx) => val === newVisibleIndices[idx]
-        )
-      ) {
-        return currentVisibleIndices;
+    // Add images that were recently visible
+    const finalVisibleIndices = [...newVisibleIndices];
+    Object.entries(outOfViewCounters.current).forEach(([index, count]) => {
+      const idx = parseInt(index);
+      if (!newVisibleIndices.includes(idx) && count < OUT_OF_VIEW_THRESHOLD) {
+        finalVisibleIndices.push(idx);
       }
-      return newVisibleIndices;
     });
+
+    // Cleanup counters that exceed threshold
+    Object.keys(outOfViewCounters.current).forEach((index) => {
+      if (outOfViewCounters.current[index] >= OUT_OF_VIEW_THRESHOLD) {
+        delete outOfViewCounters.current[index];
+      }
+    });
+
+    // Only update if the visible indices have actually changed
+    if (!arraysEqual(lastVisibleIndices.current, finalVisibleIndices)) {
+      lastVisibleIndices.current = finalVisibleIndices;
+      onVisibleIndicesChange(finalVisibleIndices);
+    }
   });
+
+  // Helper function to compare arrays
+  function arraysEqual(a, b) {
+    if (a.length !== b.length) return false;
+    a.sort();
+    b.sort();
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
   return null;
 };
 
@@ -115,7 +154,7 @@ function App() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const lastClickTime = useRef(0);
   const [visibleImageIndices, setVisibleImageIndices] = useState([]);
-  const VISIBLE_DISTANCE_THRESHOLD = 150; // Increased from 75
+  const VISIBLE_DISTANCE_THRESHOLD = 130; // Increased from 75
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
 
@@ -131,12 +170,6 @@ function App() {
       return result;
     });
   }, [interpolationFactor, images, sphereRadius]);
-
-  useEffect(() => {}, [images]);
-
-  useEffect(() => {}, [imagesPositions]);
-
-  useEffect(() => {}, [visibleImageIndices]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -269,12 +302,26 @@ function App() {
     [] // Dependencies are correct as user and setImages are passed as arguments.
     // setUploadProgress is a stable state setter.
   );
+  const handleVisibleIndicesChange = useCallback((newIndices) => {
+    // Make sure we only update state when necessary
+    // This prevents unnecessary re-renders
+    if (Array.isArray(newIndices)) {
+      setVisibleImageIndices((prev) => {
+        if (prev.length !== newIndices.length) {
+          return newIndices;
+        }
 
-  const handleVisibleIndicesChange = useCallback((newIndicesOrCallback) => {
-    if (typeof newIndicesOrCallback === 'function') {
-      setVisibleImageIndices(newIndicesOrCallback);
-    } else {
-      setVisibleImageIndices(newIndicesOrCallback);
+        // Compare arrays (they should already be sorted by the VisibilityUpdater)
+        for (let i = 0; i < prev.length; i++) {
+          if (prev[i] !== newIndices[i]) {
+            return newIndices;
+          }
+        }
+
+        return prev;
+      });
+    } else if (typeof newIndices === 'function') {
+      setVisibleImageIndices(newIndices);
     }
   }, []);
 
@@ -348,46 +395,44 @@ function App() {
         frameloop="demand"
       >
         <fog attach="fog" args={[backgroundColor, 200, 400]} />
-
         <CustomCamera targetPosition={targetPosition} />
         <OrbLight glowColor={glowColor} lightColor={lightColor} />
-
         <Text3DComponent
           triggerTransition={triggerTransition}
           sphereRadius={sphereRadius}
           setIsAuthModalOpen={setIsAuthModalOpen}
           titleOrbColor={titleOrbColor}
           textColor={textColor}
-        />
+        />{' '}
         <Suspense fallback={<Loader />}>
           {images.length > 0 &&
             imagesPositions.length > 0 &&
-            visibleImageIndices.map((imageIndex) => {
-              const image = images[imageIndex];
-              const position = imagesPositions[imageIndex];
+            images.map((image, index) => {
+              const position = imagesPositions[index];
 
               if (!image || !position) {
                 return null;
               }
 
-              const key = image.id
-                ? `image-${image.id}`
-                : `image-${imageIndex}`;
+              const key = image.id ? `image-${image.id}` : `image-${index}`;
               const imageUrl = image.url;
 
               if (!imageUrl) {
                 return null;
               }
 
+              const isVisible = visibleImageIndices.includes(index);
+
               return (
-                <ImagePlane
+                <LazyImagePlane
                   key={key}
-                  originalIndex={imageIndex}
+                  originalIndex={index}
                   position={position}
-                  onClick={() => handleImageClick(imageIndex)}
+                  onClick={() => handleImageClick(index)}
                   imageUrl={imageUrl}
                   user={user}
                   onDelete={handleDeleteImage}
+                  isVisible={isVisible}
                 />
               );
             })}
