@@ -63,13 +63,27 @@ const VisibilityUpdater = ({
 }) => {
   const tempImageVec = useMemo(() => new THREE.Vector3(), []);
   const lastVisibleIndices = useRef([]);
+  const lastUpdateTime = useRef(0);
+  const frameSkip = useRef(0);
+
+  // Optimization: Only update visibility every few frames
+  const FRAME_SKIP = 5;
+
+  // Preallocate frustum for culling
+  const frustum = useMemo(() => new THREE.Frustum(), []);
+  const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
 
   // When an image is loaded, we don't want to remove it from the visible indices
   // until it's definitely out of view for a while
   const outOfViewCounters = useRef({});
   const OUT_OF_VIEW_THRESHOLD = 30; // frames
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, clock }) => {
+    // Skip frames for better performance
+    frameSkip.current = (frameSkip.current + 1) % FRAME_SKIP;
+    if (frameSkip.current !== 0) return;
+
+    // Skip if no positions to check
     if (!allImagePositions || allImagePositions.length === 0) {
       onVisibleIndicesChange([]);
       return;
@@ -78,17 +92,33 @@ const VisibilityUpdater = ({
     const newVisibleIndices = [];
     const cameraPosition = camera.position;
 
-    // Update counters for all indices
+    // Calculate view frustum for faster culling
+    projScreenMatrix.multiplyMatrices(
+      camera.projectionMatrix,
+      camera.matrixWorldInverse
+    );
+    frustum.setFromProjectionMatrix(projScreenMatrix);
+
+    // Update counters for all indices - use incremental updates
     lastVisibleIndices.current.forEach((index) => {
-      if (!outOfViewCounters.current[index]) {
-        outOfViewCounters.current[index] = 0;
-      }
+      outOfViewCounters.current[index] = outOfViewCounters.current[index] || 0;
     });
 
-    // Check which images are in view
+    // Check which images are in view - use frustum culling for better performance
     allImagePositions.forEach((posArray, index) => {
       if (!posArray) return;
+
       tempImageVec.fromArray(posArray);
+
+      // Quick frustum culling check before distance calculation
+      if (!frustum.containsPoint(tempImageVec)) {
+        if (outOfViewCounters.current[index] !== undefined) {
+          outOfViewCounters.current[index]++;
+        }
+        return;
+      }
+
+      // Only perform distance check if in frustum
       const distance = cameraPosition.distanceTo(tempImageVec);
 
       if (distance < threshold) {
@@ -221,7 +251,6 @@ function App() {
 
     requestAnimationFrame(animate);
   }, []);
-
   const handleImageClick = useCallback(
     (index) => {
       const now = Date.now();
@@ -233,10 +262,19 @@ function App() {
       if (index >= 0 && index < imagesPositions.length) {
         const imagePosition = imagesPositions[index];
         if (Array.isArray(imagePosition)) {
-          const newTargetPosition = vector3Pool
-            .acquire()
-            .fromArray(imagePosition);
-          vector3Pool.release(newTargetPosition);
+          // Create a new Vector3 from the image position
+          const newTargetPosition = new THREE.Vector3().fromArray(
+            imagePosition
+          );
+
+          // Set the target position state to trigger camera movement
+          setTargetPosition(newTargetPosition);
+
+          // Log for debugging
+          console.log(
+            `Clicked on image ${index}, setting target to:`,
+            newTargetPosition
+          );
         }
       }
     },
@@ -387,14 +425,20 @@ function App() {
         >
           Uploading: {Math.round(uploadProgress)} %
         </div>
-      )}
+      )}{' '}
       <Canvas
         style={{ background: backgroundColor }}
         antialias="true"
-        pixelratio={window.devicePixelRatio}
-        frameloop="demand"
+        pixelratio={Math.min(1.5, window.devicePixelRatio)} // Cap pixel ratio for better performance
+        frameloop="always" // Change to always for smoother animations
+        gl={{
+          powerPreference: 'high-performance',
+          alpha: false,
+          stencil: false,
+          depth: true,
+        }}
+        performance={{ min: 0.5 }} // Performance optimization
       >
-        <fog attach="fog" args={[backgroundColor, 200, 400]} />
         <CustomCamera targetPosition={targetPosition} />
         <OrbLight glowColor={glowColor} lightColor={lightColor} />
         <Text3DComponent
@@ -405,6 +449,7 @@ function App() {
           textColor={textColor}
         />{' '}
         <Suspense fallback={<Loader />}>
+          <fog attach="fog" args={[backgroundColor, 200, 400]} />
           {images.length > 0 &&
             imagesPositions.length > 0 &&
             images.map((image, index) => {

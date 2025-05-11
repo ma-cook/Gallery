@@ -53,7 +53,10 @@ const LazyImagePlane = ({
         <ImagePlane
           originalIndex={originalIndex}
           position={position}
-          onClick={onClick}
+          onClick={(index) => {
+            console.log(`LazyImagePlane forwarding click for index ${index}`);
+            onClick(index);
+          }}
           imageUrl={imageUrl}
           user={user}
           onDelete={onDelete}

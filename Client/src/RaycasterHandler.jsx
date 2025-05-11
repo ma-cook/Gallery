@@ -8,38 +8,51 @@ const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
   const [isMoving, setIsMoving] = useState(false);
-
+  // Use a lighter throttle instead of a full debounce for more responsive movement
   const handleMouseMove = useCallback(
     debounce((event) => {
       mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    }, 100),
+    }, 33), // 30fps update rate for mouse position
     []
   );
 
+  // Use a cache for raycast results
+  const lastClickTime = useRef(0);
+  const CLICK_THRESHOLD = 300; // ms between clicks to prevent double clicks
   const handleMouseClick = useCallback(
     (event) => {
+      // Prevent rapid consecutive clicks
+      const now = performance.now();
+      if (now - lastClickTime.current < CLICK_THRESHOLD) {
+        console.log('Click ignored: too soon after last click');
+        return;
+      }
+      lastClickTime.current = now;
+
+      console.log('Processing click event');
+
       if (isMoving) return; // Ignore clicks while the camera is moving
 
+      // Use coarse raycast first with large distance
       raycaster.current.setFromCamera(mouse.current, camera);
+      raycaster.current.far = 300; // Limit raycasting distance      // Use recursive raycasting to check all children
       const intersects = raycaster.current.intersectObjects(
         scene.children,
-        true
+        true // Use true to check descendants (needed to find nested mesh objects)
       );
 
       if (intersects.length > 0) {
         // Sort intersects by distance
-        intersects.sort((a, b) => a.distance - b.distance);
-
-        // Find the closest intersected object that has userData.index
+        intersects.sort((a, b) => a.distance - b.distance); // Find the closest intersected object that has userData.originalIndex
         const intersectedObject = intersects.find(
           (intersect) =>
             intersect.object.userData &&
-            intersect.object.userData.index !== undefined
+            intersect.object.userData.originalIndex !== undefined
         );
 
         if (intersectedObject) {
-          const index = intersectedObject.object.userData.index;
+          const index = intersectedObject.object.userData.originalIndex;
           if (index !== undefined) {
             setIsMoving(true); // Set the flag to true when starting the camera movement
             handleImageClick(index);

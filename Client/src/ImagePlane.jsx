@@ -69,24 +69,45 @@ const ImagePlane = forwardRef(
       }
     }, [texture]);
 
-    const boxDepth = 0.05;
+    const boxDepth = 0.05; // Optimize materials for better performance
+    const materials = useMemo(() => {
+      // Create shared materials for sides that don't change
+      const sideMaterial = new THREE.MeshBasicMaterial({
+        color: 'black',
+        roughness: 0.8,
+        flatShading: true,
+      });
 
-    const materials = useMemo(
-      () => [
-        new THREE.MeshBasicMaterial({ color: 'black' }),
-        new THREE.MeshBasicMaterial({ color: 'black' }),
-        new THREE.MeshBasicMaterial({ color: 'black' }),
-        new THREE.MeshBasicMaterial({ color: 'black' }),
-        new THREE.MeshPhongMaterial({ map: texture }),
-        new THREE.MeshPhongMaterial({ color: 'black' }),
-      ],
-      [texture]
-    );
-
+      // Create array with shared materials to reduce GPU workload
+      return [
+        sideMaterial,
+        sideMaterial,
+        sideMaterial,
+        sideMaterial,
+        // Use MeshBasicMaterial instead of MeshPhongMaterial for front face (better performance)
+        new THREE.MeshBasicMaterial({
+          map: texture,
+          toneMapped: false, // Disable tone mapping for better performance
+          side: THREE.FrontSide, // Only render front side
+        }),
+        sideMaterial,
+      ];
+    }, [texture]);
     const direction = useMemo(() => new THREE.Vector3(), []);
+    // Use throttling to reduce update frequency
+    const lastUpdateRef = useRef(0);
+    const UPDATE_INTERVAL = 50; // ms between updates
 
-    useFrame(({ camera }) => {
+    useFrame(({ camera, clock }) => {
       if (meshRef.current) {
+        // Throttle updates to improve performance
+        const now = clock.elapsedTime * 1000;
+        if (now - lastUpdateRef.current < UPDATE_INTERVAL) {
+          return;
+        }
+        lastUpdateRef.current = now;
+
+        // Calculate camera-facing orientation
         direction
           .subVectors(meshRef.current.position, camera.position)
           .normalize();
@@ -95,7 +116,16 @@ const ImagePlane = forwardRef(
       }
     });
 
-    const handleDelete = () => onDelete(originalIndex);
+    const handleDelete = () => onDelete(originalIndex); // Handle click on this plane
+    const handleClick = (event) => {
+      // Stop propagation to prevent multiple handlers from firing
+      event.stopPropagation();
+      // Call the onClick handler passed as prop
+      if (onClick) {
+        console.log(`Image clicked: ${originalIndex}`);
+        onClick(originalIndex);
+      }
+    };
 
     return (
       <mesh
@@ -104,7 +134,7 @@ const ImagePlane = forwardRef(
         castShadow
         material={materials}
         userData={{ originalIndex }}
-        onClick={onClick}
+        onClick={handleClick}
       >
         <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
         {user && (

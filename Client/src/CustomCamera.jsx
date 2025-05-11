@@ -14,11 +14,15 @@ const CustomCamera = ({ targetPosition }) => {
   const planeHeight = 1200;
   const planeYPosition = -50;
   const minYPosition = planeYPosition + 2; // 2 units above the whitePlane
-
   useEffect(() => {
     if (targetPosition) {
+      console.log('CustomCamera: New target position received', targetPosition);
+      // Copy the target position to our ref
       targetRef.current.copy(targetPosition);
+      // Set moving flag to true to start camera animation
       isMovingRef.current = true;
+      // Reset animation timing
+      startTimeRef.current = 0;
     }
   }, [targetPosition]);
 
@@ -27,39 +31,77 @@ const CustomCamera = ({ targetPosition }) => {
       controlsRef.current.update();
     }
   }, []);
+  // Cache vectors to avoid creating new ones each frame
+  const directionVector = useRef(new THREE.Vector3());
+  const adjustedPositionVector = useRef(new THREE.Vector3());
 
-  useFrame(() => {
+  // Use a timestamp to control animation timing
+  const startTimeRef = useRef(0);
+  const animationDurationRef = useRef(800); // milliseconds
+
+  useFrame((state) => {
     if (isMovingRef.current) {
+      // Initialize animation start time if needed
+      if (startTimeRef.current === 0) {
+        startTimeRef.current = state.clock.elapsedTime * 1000;
+      }
+
+      // Calculate elapsed time for animation
+      const elapsedTime = state.clock.elapsedTime * 1000 - startTimeRef.current;
+      const progress = Math.min(elapsedTime / animationDurationRef.current, 1);
+      const easeProgress = easeOutCubic(progress); // Smooth easing function
+
       const offset = 8; // Distance to offset the camera
-      const direction = new THREE.Vector3()
+      directionVector.current
         .subVectors(camera.position, targetRef.current)
         .normalize();
-      const adjustedPosition = new THREE.Vector3().addVectors(
+      adjustedPositionVector.current.addVectors(
         targetRef.current,
-        direction.multiplyScalar(offset)
+        directionVector.current.multiplyScalar(offset)
       );
 
-      cameraRef.current.position.lerp(adjustedPosition, 0.8);
+      // Use easing function for smoother movement
+      cameraRef.current.position.lerp(
+        adjustedPositionVector.current,
+        0.05 + easeProgress * 0.2
+      );
 
-      // Stop moving if the camera is close enough to the target position
-      if (cameraRef.current.position.distanceTo(adjustedPosition) < 0.1) {
+      // Stop moving if the animation is complete
+      if (progress >= 1) {
         isMovingRef.current = false;
+        startTimeRef.current = 0; // Reset for next animation
       }
+    } else {
+      // Only update controls target when not in animated movement
+      controlsRef.current.target.lerp(targetRef.current, 0.1);
+      controlsRef.current.update();
     }
 
-    // Ensure the camera always looks at the target position
+    // Always look at the target position
     cameraRef.current.lookAt(targetRef.current);
-    controlsRef.current.target.copy(targetRef.current);
-    controlsRef.current.update();
 
-    // Constrain the camera position within the bounds of the WhitePlane
+    // Apply constraints with smoothing
     const { x, y, z } = cameraRef.current.position;
-    cameraRef.current.position.set(
-      Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x)),
-      Math.max(minYPosition, y),
-      Math.max(-planeHeight / 2, Math.min(planeHeight / 2, z))
+    const constrainedX = Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x));
+    const constrainedY = Math.max(minYPosition, y);
+    const constrainedZ = Math.max(
+      -planeHeight / 2,
+      Math.min(planeHeight / 2, z)
     );
+
+    // Apply constraints with smoothing
+    cameraRef.current.position.x +=
+      (constrainedX - cameraRef.current.position.x) * 0.1;
+    cameraRef.current.position.y +=
+      (constrainedY - cameraRef.current.position.y) * 0.1;
+    cameraRef.current.position.z +=
+      (constrainedZ - cameraRef.current.position.z) * 0.1;
   });
+
+  // Easing function for smoother animations
+  const easeOutCubic = (x) => {
+    return 1 - Math.pow(1 - x, 3);
+  };
 
   return (
     <>
@@ -71,7 +113,7 @@ const CustomCamera = ({ targetPosition }) => {
         far={5000}
         position={[20, 20, 130]}
         aspect={window.innerWidth / window.innerHeight}
-      />
+      />{' '}
       <OrbitControls
         ref={controlsRef}
         args={[cameraRef.current, gl.domElement]}
@@ -79,8 +121,13 @@ const CustomCamera = ({ targetPosition }) => {
         enablePan={true}
         enableRotate={true}
         enableDamping={true}
-        dampingFactor={0.05}
+        dampingFactor={0.1} // Increased from 0.05 for smoother motion
+        rotateSpeed={0.5} // Reduced from default 1.0 for smoother rotation
+        zoomSpeed={0.8} // Slightly reduced for better control
         maxDistance={150}
+        // Add performance optimizations
+        maxPolarAngle={Math.PI / 1.75} // Limit rotation to avoid rendering unnecessary areas
+        minPolarAngle={Math.PI / 8} // Prevent going too high up
       />
     </>
   );
