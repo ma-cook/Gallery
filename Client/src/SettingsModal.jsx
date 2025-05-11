@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback } from 'react';
+import useStore from './store';
 import {
   saveOrbColor,
   saveTitleOrbColor,
@@ -13,17 +14,14 @@ function SettingsModal({
   onTitleOrbChange,
   onTextColorChange,
 }) {
-  const [colors, setColors] = useState({
-    color: '#ffffff',
-    glowColor: '#fff4d2',
-    titleOrbColor: '#fff4d2',
-    textColor: '#fff4d2',
-  });
+  const backgroundColor = useStore((state) => state.backgroundColor);
+  const glowColor = useStore((state) => state.glowColor);
+  const titleOrbColor = useStore((state) => state.titleOrbColor);
+  const textColor = useStore((state) => state.textColor);
 
   const handleColorChange = useCallback(
     (event) => {
       const newColor = event.target.value;
-      setColors((prevColors) => ({ ...prevColors, color: newColor }));
       onColorChange(newColor);
     },
     [onColorChange]
@@ -32,7 +30,6 @@ function SettingsModal({
   const handleGlowColorChange = useCallback(
     async (event) => {
       const newGlowColor = event.target.value;
-      setColors((prevColors) => ({ ...prevColors, glowColor: newGlowColor }));
       await saveOrbColor(newGlowColor);
       onGlowColorChange(newGlowColor);
     },
@@ -42,10 +39,6 @@ function SettingsModal({
   const handleTitleOrbChange = useCallback(
     async (event) => {
       const newTitleOrbColor = event.target.value;
-      setColors((prevColors) => ({
-        ...prevColors,
-        titleOrbColor: newTitleOrbColor,
-      }));
       await saveTitleOrbColor(newTitleOrbColor);
       onTitleOrbChange(newTitleOrbColor);
     },
@@ -55,7 +48,6 @@ function SettingsModal({
   const handleTextColorChange = useCallback(
     async (event) => {
       const newTextColor = event.target.value;
-      setColors((prevColors) => ({ ...prevColors, textColor: newTextColor }));
       await saveTextColor(newTextColor);
       onTextColorChange(newTextColor);
     },
@@ -79,13 +71,17 @@ function SettingsModal({
       <h2>Settings</h2>
       <label>
         Background and Fog Color:
-        <input type="color" value={colors.color} onChange={handleColorChange} />
+        <input
+          type="color"
+          value={backgroundColor}
+          onChange={handleColorChange}
+        />
       </label>
       <label>
         Orb Lights:
         <input
           type="color"
-          value={colors.glowColor}
+          value={glowColor}
           onChange={handleGlowColorChange}
         />
       </label>
@@ -93,7 +89,7 @@ function SettingsModal({
         Title Orb Lights:
         <input
           type="color"
-          value={colors.titleOrbColor}
+          value={titleOrbColor}
           onChange={handleTitleOrbChange}
         />
       </label>
@@ -101,7 +97,7 @@ function SettingsModal({
         Text Color:
         <input
           type="color"
-          value={colors.textColor}
+          value={textColor}
           onChange={handleTextColorChange}
         />
       </label>

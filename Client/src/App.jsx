@@ -1,11 +1,11 @@
 import React, {
   useRef,
   useEffect,
-  useState,
   useCallback,
   useMemo,
   Suspense,
   lazy,
+  useState,
 } from 'react';
 import { useFrame, Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -32,6 +32,7 @@ import { handleSignIn } from './authFunctions';
 import Text3DComponent from './TextComponent';
 import OrbLight from './OrbLight';
 import SettingsModal from './SettingsModal';
+import useStore from './store';
 
 const LazyImagePlane = lazy(() => import('./LazyImagePlane'));
 const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
@@ -55,7 +56,6 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
-// Helper component for visibility updates
 const VisibilityUpdater = ({
   allImagePositions,
   onVisibleIndicesChange,
@@ -66,24 +66,18 @@ const VisibilityUpdater = ({
   const lastUpdateTime = useRef(0);
   const frameSkip = useRef(0);
 
-  // Optimization: Only update visibility every few frames
   const FRAME_SKIP = 5;
 
-  // Preallocate frustum for culling
   const frustum = useMemo(() => new THREE.Frustum(), []);
   const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
 
-  // When an image is loaded, we don't want to remove it from the visible indices
-  // until it's definitely out of view for a while
   const outOfViewCounters = useRef({});
-  const OUT_OF_VIEW_THRESHOLD = 30; // frames
+  const OUT_OF_VIEW_THRESHOLD = 30;
 
   useFrame(({ camera, clock }) => {
-    // Skip frames for better performance
     frameSkip.current = (frameSkip.current + 1) % FRAME_SKIP;
     if (frameSkip.current !== 0) return;
 
-    // Skip if no positions to check
     if (!allImagePositions || allImagePositions.length === 0) {
       onVisibleIndicesChange([]);
       return;
@@ -92,25 +86,21 @@ const VisibilityUpdater = ({
     const newVisibleIndices = [];
     const cameraPosition = camera.position;
 
-    // Calculate view frustum for faster culling
     projScreenMatrix.multiplyMatrices(
       camera.projectionMatrix,
       camera.matrixWorldInverse
     );
     frustum.setFromProjectionMatrix(projScreenMatrix);
 
-    // Update counters for all indices - use incremental updates
     lastVisibleIndices.current.forEach((index) => {
       outOfViewCounters.current[index] = outOfViewCounters.current[index] || 0;
     });
 
-    // Check which images are in view - use frustum culling for better performance
     allImagePositions.forEach((posArray, index) => {
       if (!posArray) return;
 
       tempImageVec.fromArray(posArray);
 
-      // Quick frustum culling check before distance calculation
       if (!frustum.containsPoint(tempImageVec)) {
         if (outOfViewCounters.current[index] !== undefined) {
           outOfViewCounters.current[index]++;
@@ -118,20 +108,16 @@ const VisibilityUpdater = ({
         return;
       }
 
-      // Only perform distance check if in frustum
       const distance = cameraPosition.distanceTo(tempImageVec);
 
       if (distance < threshold) {
         newVisibleIndices.push(index);
-        // Reset the counter when the image is in view
         outOfViewCounters.current[index] = 0;
       } else if (outOfViewCounters.current[index] !== undefined) {
-        // Increment counter for images that were visible but now out of view
         outOfViewCounters.current[index]++;
       }
     });
 
-    // Add images that were recently visible
     const finalVisibleIndices = [...newVisibleIndices];
     Object.entries(outOfViewCounters.current).forEach(([index, count]) => {
       const idx = parseInt(index);
@@ -140,21 +126,18 @@ const VisibilityUpdater = ({
       }
     });
 
-    // Cleanup counters that exceed threshold
     Object.keys(outOfViewCounters.current).forEach((index) => {
       if (outOfViewCounters.current[index] >= OUT_OF_VIEW_THRESHOLD) {
         delete outOfViewCounters.current[index];
       }
     });
 
-    // Only update if the visible indices have actually changed
     if (!arraysEqual(lastVisibleIndices.current, finalVisibleIndices)) {
       lastVisibleIndices.current = finalVisibleIndices;
       onVisibleIndicesChange(finalVisibleIndices);
     }
   });
 
-  // Helper function to compare arrays
   function arraysEqual(a, b) {
     if (a.length !== b.length) return false;
     a.sort();
@@ -169,22 +152,43 @@ const VisibilityUpdater = ({
 };
 
 function App() {
-  const [images, setImages] = useState([]);
+  const lastClickTime = useRef(0);
+
+  const images = useStore((state) => state.images);
+  const setImages = useStore((state) => state.setImages);
+  const isSettingsModalOpen = useStore((state) => state.isSettingsModalOpen);
+  const setIsSettingsModalOpen = useStore(
+    (state) => state.setIsSettingsModalOpen
+  );
+  const layout = useStore((state) => state.layout);
+  const setLayout = useStore((state) => state.setLayout);
+  const interpolationFactor = useStore((state) => state.interpolationFactor);
+  const setInterpolationFactor = useStore(
+    (state) => state.setInterpolationFactor
+  );
+  const targetPosition = useStore((state) => state.targetPosition);
+  const setTargetPosition = useStore((state) => state.setTargetPosition);
+  const backgroundColor = useStore((state) => state.backgroundColor);
+  const setBackgroundColor = useStore((state) => state.setBackgroundColor);
+  const glowColor = useStore((state) => state.glowColor);
+  const setGlowColor = useStore((state) => state.setGlowColor);
+  const lightColor = useStore((state) => state.lightColor);
+  const setLightColor = useStore((state) => state.setLightColor);
+  const titleOrbColor = useStore((state) => state.titleOrbColor);
+  const setTitleOrbColor = useStore((state) => state.setTitleOrbColor);
+  const textColor = useStore((state) => state.textColor);
+  const setTextColor = useStore((state) => state.setTextColor);
+  const uploadProgress = useStore((state) => state.uploadProgress);
+  const setUploadProgress = useStore((state) => state.setUploadProgress);
+  const visibleImageIndices = useStore((state) => state.visibleImageIndices);
+  const setVisibleImageIndices = useStore(
+    (state) => state.setVisibleImageIndices
+  );
+
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [layout, setLayout] = useState('sphere');
-  const [interpolationFactor, setInterpolationFactor] = useState(0);
-  const [targetPosition, setTargetPosition] = useState(null);
-  const [backgroundColor, setBackgroundColor] = useState('white');
-  const [glowColor, setGlowColor] = useState('#fff4d2');
-  const [lightColor, setLightColor] = useState('#fff4d2');
-  const [titleOrbColor, setTitleOrbColor] = useState('#fff4d2');
-  const [textColor, setTextColor] = useState('#fff4d2');
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const lastClickTime = useRef(0);
-  const [visibleImageIndices, setVisibleImageIndices] = useState([]);
-  const VISIBLE_DISTANCE_THRESHOLD = 130; // Increased from 75
+
+  const VISIBLE_DISTANCE_THRESHOLD = 130;
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
 
@@ -234,23 +238,27 @@ function App() {
     fetchData();
   }, []);
 
-  const triggerTransition = useCallback((targetLayout) => {
-    setLayout(targetLayout);
-    let start = null;
-    const duration = 1000;
+  const triggerTransition = useCallback(
+    (targetLayout) => {
+      setLayout(targetLayout);
+      let start = null;
+      const duration = 1000;
 
-    const animate = (timestamp) => {
-      if (!start) start = timestamp;
-      const elapsed = timestamp - start;
-      const factor = Math.min(elapsed / duration, 1);
-      setInterpolationFactor(targetLayout === 'sphere' ? 1 - factor : factor);
-      if (elapsed < duration) {
-        requestAnimationFrame(animate);
-      }
-    };
+      const animate = (timestamp) => {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        const factor = Math.min(elapsed / duration, 1);
+        setInterpolationFactor(targetLayout === 'sphere' ? 1 - factor : factor);
+        if (elapsed < duration) {
+          requestAnimationFrame(animate);
+        }
+      };
 
-    requestAnimationFrame(animate);
-  }, []);
+      requestAnimationFrame(animate);
+    },
+    [setLayout, setInterpolationFactor]
+  );
+
   const handleImageClick = useCallback(
     (index) => {
       const now = Date.now();
@@ -262,15 +270,12 @@ function App() {
       if (index >= 0 && index < imagesPositions.length) {
         const imagePosition = imagesPositions[index];
         if (Array.isArray(imagePosition)) {
-          // Create a new Vector3 from the image position
           const newTargetPosition = new THREE.Vector3().fromArray(
             imagePosition
           );
 
-          // Set the target position state to trigger camera movement
           setTargetPosition(newTargetPosition);
 
-          // Log for debugging
           console.log(
             `Clicked on image ${index}, setting target to:`,
             newTargetPosition
@@ -278,7 +283,7 @@ function App() {
         }
       }
     },
-    [imagesPositions]
+    [imagesPositions, setTargetPosition]
   );
 
   const handleDeleteImage = useCallback(
@@ -287,34 +292,37 @@ function App() {
       await deleteImage(image.id, image.url);
       setImages((prevImages) => prevImages.filter((_, i) => i !== index));
     },
-    [images]
+    [images, setImages]
   );
 
-  const handleColorChange = useCallback(async (color) => {
-    setBackgroundColor(color);
-    await saveColor(color);
-  }, []);
+  const handleColorChange = useCallback(
+    async (color) => {
+      setBackgroundColor(color);
+      await saveColor(color);
+    },
+    [setBackgroundColor]
+  );
 
   const handleFileChangeWithProgress = useCallback(
-    async (event, user, setImages) => {
+    async (event, user, setImagesFn) => {
       const files = event.target.files;
       if (!files || files.length === 0) {
-        setUploadProgress(0); // Reset if no files selected
+        setUploadProgress(0);
         return;
       }
 
-      setUploadProgress(1); // Indicate that uploading has started
+      setUploadProgress(1);
 
       const uploadPromises = Array.from(files).map((file) => {
         return new Promise((resolve) => {
-          const uploadTask = handleFileChange(file, user, setImages);
+          const uploadTask = handleFileChange(file, user, setImagesFn);
 
           uploadTask.on(
             'state_changed',
             (snapshot) => {
               const progress =
                 (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(progress); // Shows progress of the currently reporting file
+              setUploadProgress(progress);
             },
             (error) => {
               resolve({ success: false, file: file.name, error });
@@ -334,34 +342,30 @@ function App() {
         }
       } catch (error) {
       } finally {
-        setUploadProgress(0); // Hide the progress indicator.
+        setUploadProgress(0);
       }
     },
-    [] // Dependencies are correct as user and setImages are passed as arguments.
-    // setUploadProgress is a stable state setter.
+    [setUploadProgress]
   );
-  const handleVisibleIndicesChange = useCallback((newIndices) => {
-    // Make sure we only update state when necessary
-    // This prevents unnecessary re-renders
-    if (Array.isArray(newIndices)) {
-      setVisibleImageIndices((prev) => {
-        if (prev.length !== newIndices.length) {
-          return newIndices;
-        }
 
-        // Compare arrays (they should already be sorted by the VisibilityUpdater)
-        for (let i = 0; i < prev.length; i++) {
-          if (prev[i] !== newIndices[i]) {
-            return newIndices;
-          }
-        }
-
-        return prev;
-      });
-    } else if (typeof newIndices === 'function') {
-      setVisibleImageIndices(newIndices);
-    }
-  }, []);
+  const handleVisibleIndicesChange = useCallback(
+    (newIndices) => {
+      // VisibilityUpdater ensures newIndices is an array and has changed.
+      // Directly set the new array to the Zustand store.
+      if (Array.isArray(newIndices)) {
+        setVisibleImageIndices(newIndices);
+      } else {
+        // Optional: Log an error or handle unexpected input if necessary
+        console.error(
+          'handleVisibleIndicesChange received non-array input:',
+          newIndices
+        );
+        // Fallback to an empty array to prevent further errors
+        setVisibleImageIndices([]);
+      }
+    },
+    [setVisibleImageIndices]
+  );
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
@@ -406,7 +410,6 @@ function App() {
         onTitleOrbChange={setTitleOrbColor}
         onTextColorChange={setTextColor}
       />
-      {/* Replace R3F Loader with a simple HTML div for upload progress */}
       {uploadProgress > 0 && (
         <div
           style={{
@@ -414,30 +417,30 @@ function App() {
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            color: textColor, // Using existing textColor state for consistency
+            color: textColor,
             backgroundColor: 'rgba(0, 0, 0, 0.75)',
             padding: '15px 25px',
             borderRadius: '8px',
             fontSize: '1.2em',
-            zIndex: 1000, // Ensure it's on top of other UI elements but below modals if necessary
+            zIndex: 1000,
             textAlign: 'center',
           }}
         >
           Uploading: {Math.round(uploadProgress)} %
         </div>
-      )}{' '}
+      )}
       <Canvas
         style={{ background: backgroundColor }}
         antialias="true"
-        pixelratio={Math.min(1.5, window.devicePixelRatio)} // Cap pixel ratio for better performance
-        frameloop="always" // Change to always for smoother animations
+        pixelratio={Math.min(1.5, window.devicePixelRatio)}
+        frameloop="always"
         gl={{
           powerPreference: 'high-performance',
           alpha: false,
           stencil: false,
           depth: true,
         }}
-        performance={{ min: 0.5 }} // Performance optimization
+        performance={{ min: 0.5 }}
       >
         <CustomCamera targetPosition={targetPosition} />
         <OrbLight glowColor={glowColor} lightColor={lightColor} />
@@ -447,9 +450,8 @@ function App() {
           setIsAuthModalOpen={setIsAuthModalOpen}
           titleOrbColor={titleOrbColor}
           textColor={textColor}
-        />{' '}
+        />
         <Suspense fallback={<Loader />}>
-          <fog attach="fog" args={[backgroundColor, 200, 400]} />
           {images.length > 0 &&
             imagesPositions.length > 0 &&
             images.map((image, index) => {
@@ -493,7 +495,6 @@ function App() {
             />
           )}
         </Suspense>
-        <WhitePlane />
       </Canvas>
     </div>
   );

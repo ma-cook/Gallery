@@ -113,7 +113,7 @@ const CustomCamera = ({ targetPosition }) => {
         far={5000}
         position={[20, 20, 130]}
         aspect={window.innerWidth / window.innerHeight}
-      />{' '}
+      />
       <OrbitControls
         ref={controlsRef}
         args={[cameraRef.current, gl.domElement]}

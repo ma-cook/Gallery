@@ -1,19 +1,46 @@
-import React, { forwardRef, useRef, useEffect, useState, useMemo } from 'react';
+import React, { forwardRef, useRef, useEffect, useMemo } from 'react'; // Removed useState
 import { useFrame, useLoader } from '@react-three/fiber';
 import { TextureLoader } from 'three';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
+import useStore from './store'; // Added
 
 const ImagePlane = forwardRef(
   (
     { originalIndex, position, onClick, imageUrl, user, onDelete, onError },
     ref
   ) => {
-    const texture = useLoader(TextureLoader, imageUrl, undefined, (error) => {
-      console.error('Error loading texture:', error);
-      if (onError) onError(error);
-    });
+    const {
+      ensureImageComponentState,
+      setBoxDimensionsForImage,
+      imageComponentStates,
+    } = useStore((state) => ({
+      ensureImageComponentState: state.ensureImageComponentState,
+      setBoxDimensionsForImage: state.setBoxDimensionsForImage,
+      imageComponentStates: state.imageComponentStates,
+    }));
+
+    useEffect(() => {
+      ensureImageComponentState(originalIndex);
+    }, [originalIndex, ensureImageComponentState]);
+
+    const boxDimensions = imageComponentStates[originalIndex]
+      ?.boxDimensions || [1, 1];
+
+    const texture = useLoader(
+      TextureLoader,
+      imageUrl,
+      (loader) => {
+        // Optional: You can configure the loader here if needed
+      },
+      (err) => {
+        console.error(`TextureLoader failed for ${imageUrl}:`, err);
+        if (onError) {
+          onError(err); // Call the onError prop passed from LazyImagePlane
+        }
+      }
+    );
 
     if (texture) {
       texture.minFilter = THREE.LinearFilter;
@@ -22,18 +49,15 @@ const ImagePlane = forwardRef(
     }
 
     const meshRef = useRef();
-    const [boxDimensions, setBoxDimensions] = useState([1, 1]);
 
     useEffect(() => {
-      // It's important to capture the texture in the effect setup phase
-      // because the 'texture' variable from useLoader can change.
       const currentTexture = texture;
       return () => {
         if (currentTexture) {
           currentTexture.dispose();
         }
       };
-    }, [texture]); // This effect runs when 'texture' changes, and cleans up the previous texture.
+    }, [texture]);
 
     useEffect(() => {
       if (
@@ -57,57 +81,57 @@ const ImagePlane = forwardRef(
         newWidth = Math.round(newWidth);
         newHeight = Math.round(newHeight);
 
-        setBoxDimensions((prevDimensions) => {
-          if (
-            prevDimensions[0] !== newWidth ||
-            prevDimensions[1] !== newHeight
-          ) {
-            return [newWidth, newHeight];
-          }
-          return prevDimensions;
-        });
+        const currentDimensions = imageComponentStates[originalIndex]
+          ?.boxDimensions || [1, 1];
+        if (
+          currentDimensions[0] !== newWidth ||
+          currentDimensions[1] !== newHeight
+        ) {
+          setBoxDimensionsForImage(originalIndex, [newWidth, newHeight]);
+        }
       }
-    }, [texture]);
+    }, [
+      texture,
+      originalIndex,
+      imageComponentStates,
+      setBoxDimensionsForImage,
+      ensureImageComponentState,
+    ]);
 
-    const boxDepth = 0.05; // Optimize materials for better performance
+    const boxDepth = 0.05;
     const materials = useMemo(() => {
-      // Create shared materials for sides that don't change
       const sideMaterial = new THREE.MeshBasicMaterial({
         color: 'black',
         roughness: 0.8,
         flatShading: true,
       });
 
-      // Create array with shared materials to reduce GPU workload
       return [
         sideMaterial,
         sideMaterial,
         sideMaterial,
         sideMaterial,
-        // Use MeshBasicMaterial instead of MeshPhongMaterial for front face (better performance)
         new THREE.MeshBasicMaterial({
           map: texture,
-          toneMapped: false, // Disable tone mapping for better performance
-          side: THREE.FrontSide, // Only render front side
+          toneMapped: false,
+          side: THREE.FrontSide,
         }),
         sideMaterial,
       ];
     }, [texture]);
+
     const direction = useMemo(() => new THREE.Vector3(), []);
-    // Use throttling to reduce update frequency
     const lastUpdateRef = useRef(0);
-    const UPDATE_INTERVAL = 50; // ms between updates
+    const UPDATE_INTERVAL = 50;
 
     useFrame(({ camera, clock }) => {
       if (meshRef.current) {
-        // Throttle updates to improve performance
         const now = clock.elapsedTime * 1000;
         if (now - lastUpdateRef.current < UPDATE_INTERVAL) {
           return;
         }
         lastUpdateRef.current = now;
 
-        // Calculate camera-facing orientation
         direction
           .subVectors(meshRef.current.position, camera.position)
           .normalize();
@@ -116,11 +140,9 @@ const ImagePlane = forwardRef(
       }
     });
 
-    const handleDelete = () => onDelete(originalIndex); // Handle click on this plane
+    const handleDelete = () => onDelete(originalIndex);
     const handleClick = (event) => {
-      // Stop propagation to prevent multiple handlers from firing
       event.stopPropagation();
-      // Call the onClick handler passed as prop
       if (onClick) {
         console.log(`Image clicked: ${originalIndex}`);
         onClick(originalIndex);

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, Suspense, useRef } from 'react';
+import React, { useEffect, Suspense, useRef } from 'react'; // Removed useState
 import ImagePlane from './ImagePlane';
 import Loader from './Loader';
+import useStore from './store'; // Added
 
 const LazyImagePlane = ({
   originalIndex,
@@ -11,30 +12,46 @@ const LazyImagePlane = ({
   onDelete,
   isVisible,
 }) => {
-  // Keep track of whether this specific image has been loaded before
-  const [hasLoaded, setHasLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
-  const loadedRef = useRef(false);
+  const {
+    ensureImageComponentState,
+    setHasLoadedForImage,
+    setHasErrorForImage,
+    imageComponentStates,
+  } = useStore((state) => ({
+    ensureImageComponentState: state.ensureImageComponentState,
+    setHasLoadedForImage: state.setHasLoadedForImage,
+    setHasErrorForImage: state.setHasErrorForImage,
+    imageComponentStates: state.imageComponentStates,
+  }));
 
-  // Mark this component as loaded when it first renders successfully
+  useEffect(() => {
+    ensureImageComponentState(originalIndex);
+  }, [originalIndex, ensureImageComponentState]);
+
+  // Safely access state, providing defaults if not yet initialized
+  const componentState = imageComponentStates[originalIndex] || {
+    hasLoaded: false,
+    hasError: false,
+  };
+  const { hasLoaded, hasError } = componentState;
+
+  const loadedRef = useRef(false); // Remains for tracking initial mount visibility trigger
+
   useEffect(() => {
     if (isVisible && !loadedRef.current) {
-      setHasLoaded(true);
+      setHasLoadedForImage(originalIndex, true);
       loadedRef.current = true;
     }
-  }, [isVisible]);
+  }, [isVisible, originalIndex, setHasLoadedForImage]);
 
-  // For error handling
   const handleError = () => {
-    setHasError(true);
+    setHasErrorForImage(originalIndex, true);
   };
 
-  // If this image isn't visible and hasn't been loaded before, don't render it
   if (!isVisible && !hasLoaded) {
     return null;
   }
 
-  // The fallback will only show when the image is initially loading
   return (
     <Suspense
       fallback={
@@ -60,7 +77,7 @@ const LazyImagePlane = ({
           imageUrl={imageUrl}
           user={user}
           onDelete={onDelete}
-          onError={handleError}
+          onError={handleError} // This now calls the store action
         />
       )}
     </Suspense>
