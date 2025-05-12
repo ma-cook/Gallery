@@ -17,7 +17,10 @@ const useStore = create((set) => ({
   imageComponentStates: {}, // New state for image component-specific data
 
   // Actions
-  setImages: (images) => set({ images }),
+  setImages: (updater) =>
+    set((state) => ({
+      images: typeof updater === 'function' ? updater(state.images) : updater,
+    })),
   setIsSettingsModalOpen: (isOpen) => set({ isSettingsModalOpen: isOpen }),
   setLayout: (layout) => set({ layout }),
   setInterpolationFactor: (factor) => set({ interpolationFactor: factor }),

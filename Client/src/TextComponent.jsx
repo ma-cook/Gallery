@@ -176,13 +176,6 @@ function Text3DComponent({
                 material={materials.mesh}
                 onClick={handleSignOut}
               >
-                <pointLight
-                  distance={200}
-                  decay={1}
-                  position={[0, 0, 0]}
-                  color={titleOrbColor}
-                  intensity={10}
-                />
                 <FakeGlowMaterial glowColor={titleOrbColor} />
               </mesh>
             </>

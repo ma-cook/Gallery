@@ -56,6 +56,15 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
+// Helper function for comparing sorted arrays
+function areSortedArraysEqual(a, b) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 const VisibilityUpdater = ({
   allImagePositions,
   onVisibleIndicesChange,
@@ -79,11 +88,14 @@ const VisibilityUpdater = ({
     if (frameSkip.current !== 0) return;
 
     if (!allImagePositions || allImagePositions.length === 0) {
-      onVisibleIndicesChange([]);
+      if (lastVisibleIndices.current.length > 0) {
+        onVisibleIndicesChange([]);
+        lastVisibleIndices.current = [];
+      }
       return;
     }
 
-    const newVisibleIndices = [];
+    const newVisibleIndicesSet = new Set();
     const cameraPosition = camera.position;
 
     projScreenMatrix.multiplyMatrices(
@@ -111,20 +123,24 @@ const VisibilityUpdater = ({
       const distance = cameraPosition.distanceTo(tempImageVec);
 
       if (distance < threshold) {
-        newVisibleIndices.push(index);
+        newVisibleIndicesSet.add(index);
         outOfViewCounters.current[index] = 0;
       } else if (outOfViewCounters.current[index] !== undefined) {
         outOfViewCounters.current[index]++;
       }
     });
 
-    const finalVisibleIndices = [...newVisibleIndices];
-    Object.entries(outOfViewCounters.current).forEach(([index, count]) => {
-      const idx = parseInt(index);
-      if (!newVisibleIndices.includes(idx) && count < OUT_OF_VIEW_THRESHOLD) {
-        finalVisibleIndices.push(idx);
+    const finalVisibleIndicesWorkingSet = new Set(newVisibleIndicesSet);
+    Object.entries(outOfViewCounters.current).forEach(([indexStr, count]) => {
+      const idx = parseInt(indexStr);
+      if (!newVisibleIndicesSet.has(idx) && count < OUT_OF_VIEW_THRESHOLD) {
+        finalVisibleIndicesWorkingSet.add(idx);
       }
     });
+
+    const finalVisibleIndicesArray = Array.from(
+      finalVisibleIndicesWorkingSet
+    ).sort((a, b) => a - b);
 
     Object.keys(outOfViewCounters.current).forEach((index) => {
       if (outOfViewCounters.current[index] >= OUT_OF_VIEW_THRESHOLD) {
@@ -132,21 +148,16 @@ const VisibilityUpdater = ({
       }
     });
 
-    if (!arraysEqual(lastVisibleIndices.current, finalVisibleIndices)) {
-      lastVisibleIndices.current = finalVisibleIndices;
-      onVisibleIndicesChange(finalVisibleIndices);
+    if (
+      !areSortedArraysEqual(
+        lastVisibleIndices.current,
+        finalVisibleIndicesArray
+      )
+    ) {
+      lastVisibleIndices.current = finalVisibleIndicesArray;
+      onVisibleIndicesChange(finalVisibleIndicesArray);
     }
   });
-
-  function arraysEqual(a, b) {
-    if (a.length !== b.length) return false;
-    a.sort();
-    b.sort();
-    for (let i = 0; i < a.length; i++) {
-      if (a[i] !== b[i]) return false;
-    }
-    return true;
-  }
 
   return null;
 };
@@ -204,6 +215,11 @@ function App() {
       return result;
     });
   }, [interpolationFactor, images, sphereRadius]);
+
+  const visibleImageIndicesSet = useMemo(
+    () => new Set(visibleImageIndices),
+    [visibleImageIndices]
+  );
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -350,17 +366,13 @@ function App() {
 
   const handleVisibleIndicesChange = useCallback(
     (newIndices) => {
-      // VisibilityUpdater ensures newIndices is an array and has changed.
-      // Directly set the new array to the Zustand store.
       if (Array.isArray(newIndices)) {
         setVisibleImageIndices(newIndices);
       } else {
-        // Optional: Log an error or handle unexpected input if necessary
         console.error(
           'handleVisibleIndicesChange received non-array input:',
           newIndices
         );
-        // Fallback to an empty array to prevent further errors
         setVisibleImageIndices([]);
       }
     },
@@ -442,8 +454,9 @@ function App() {
         }}
         performance={{ min: 0.5 }}
       >
+        <ambientLight />
         <CustomCamera targetPosition={targetPosition} />
-        <OrbLight glowColor={glowColor} lightColor={lightColor} />
+
         <Text3DComponent
           triggerTransition={triggerTransition}
           sphereRadius={sphereRadius}
@@ -468,7 +481,7 @@ function App() {
                 return null;
               }
 
-              const isVisible = visibleImageIndices.includes(index);
+              const isVisible = visibleImageIndicesSet.has(index);
 
               return (
                 <LazyImagePlane

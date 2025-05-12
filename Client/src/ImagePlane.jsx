@@ -5,6 +5,13 @@ import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
 import useStore from './store'; // Added
+import { calculateImageDimensions } from './utils'; // Import the new utility function
+
+const sideMaterial = new THREE.MeshBasicMaterial({
+  color: 'black',
+  roughness: 0.8,
+  flatShading: true,
+});
 
 const ImagePlane = forwardRef(
   (
@@ -20,10 +27,6 @@ const ImagePlane = forwardRef(
       setBoxDimensionsForImage: state.setBoxDimensionsForImage,
       imageComponentStates: state.imageComponentStates,
     }));
-
-    useEffect(() => {
-      ensureImageComponentState(originalIndex);
-    }, [originalIndex, ensureImageComponentState]);
 
     const boxDimensions = imageComponentStates[originalIndex]
       ?.boxDimensions || [1, 1];
@@ -60,26 +63,8 @@ const ImagePlane = forwardRef(
     }, [texture]);
 
     useEffect(() => {
-      if (
-        texture.image &&
-        texture.image.naturalWidth &&
-        texture.image.naturalHeight
-      ) {
-        const maxWidth = 10;
-        const aspectRatio =
-          texture.image.naturalWidth / texture.image.naturalHeight;
-
-        let newWidth, newHeight;
-        if (texture.image.naturalWidth > texture.image.naturalHeight) {
-          newWidth = maxWidth;
-          newHeight = maxWidth / aspectRatio;
-        } else {
-          newHeight = maxWidth;
-          newWidth = maxWidth * aspectRatio;
-        }
-
-        newWidth = Math.round(newWidth);
-        newHeight = Math.round(newHeight);
+      if (texture && texture.image) {
+        const [newWidth, newHeight] = calculateImageDimensions(texture.image);
 
         const currentDimensions = imageComponentStates[originalIndex]
           ?.boxDimensions || [1, 1];
@@ -95,17 +80,10 @@ const ImagePlane = forwardRef(
       originalIndex,
       imageComponentStates,
       setBoxDimensionsForImage,
-      ensureImageComponentState,
     ]);
 
     const boxDepth = 0.05;
     const materials = useMemo(() => {
-      const sideMaterial = new THREE.MeshBasicMaterial({
-        color: 'black',
-        roughness: 0.8,
-        flatShading: true,
-      });
-
       return [
         sideMaterial,
         sideMaterial,
@@ -124,30 +102,20 @@ const ImagePlane = forwardRef(
     const lastUpdateRef = useRef(0);
     const UPDATE_INTERVAL = 50;
 
-    useFrame(({ camera, clock }) => {
-      if (meshRef.current) {
-        const now = clock.elapsedTime * 1000;
-        if (now - lastUpdateRef.current < UPDATE_INTERVAL) {
-          return;
-        }
-        lastUpdateRef.current = now;
+    useFrame(
+      ({ camera, clock }) => {
+        if (!meshRef.current) return;
 
         direction
           .subVectors(meshRef.current.position, camera.position)
           .normalize();
         meshRef.current.lookAt(camera.position);
         meshRef.current.rotation.z += Math.PI;
-      }
-    });
+      },
+      { frameloop: 'demand', throttle: UPDATE_INTERVAL }
+    );
 
     const handleDelete = () => onDelete(originalIndex);
-    const handleClick = (event) => {
-      event.stopPropagation();
-      if (onClick) {
-        console.log(`Image clicked: ${originalIndex}`);
-        onClick(originalIndex);
-      }
-    };
 
     return (
       <mesh
@@ -156,7 +124,7 @@ const ImagePlane = forwardRef(
         castShadow
         material={materials}
         userData={{ originalIndex }}
-        onClick={handleClick}
+        onClick={onClick}
       >
         <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
         {user && (
