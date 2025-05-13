@@ -23,7 +23,6 @@ const LazyImagePlane = ({
     setHasErrorForImage: state.setHasErrorForImage,
     imageComponentStates: state.imageComponentStates,
   }));
-
   useEffect(() => {
     ensureImageComponentState(originalIndex);
   }, [originalIndex, ensureImageComponentState]);

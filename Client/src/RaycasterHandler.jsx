@@ -25,12 +25,9 @@ const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
       // Prevent rapid consecutive clicks
       const now = performance.now();
       if (now - lastClickTime.current < CLICK_THRESHOLD) {
-        console.log('Click ignored: too soon after last click');
         return;
       }
       lastClickTime.current = now;
-
-      console.log('Processing click event');
 
       if (isMoving) return; // Ignore clicks while the camera is moving
 

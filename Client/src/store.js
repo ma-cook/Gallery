@@ -44,6 +44,7 @@ const useStore = create((set) => ({
               boxDimensions: [1, 1],
               hasLoaded: false,
               hasError: false,
+              highResolution: false, // Start with low resolution until distance is checked
             },
           },
         };
@@ -72,7 +73,6 @@ const useStore = create((set) => ({
         },
       },
     })),
-
   setHasErrorForImage: (index, hasError) =>
     set((state) => ({
       imageComponentStates: {
@@ -80,6 +80,17 @@ const useStore = create((set) => ({
         [index]: {
           ...(state.imageComponentStates[index] || {}),
           hasError,
+        },
+      },
+    })),
+
+  setHighResolutionForImage: (index, highResolution) =>
+    set((state) => ({
+      imageComponentStates: {
+        ...state.imageComponentStates,
+        [index]: {
+          ...(state.imageComponentStates[index] || {}),
+          highResolution,
         },
       },
     })),

@@ -1,17 +1,22 @@
-import React, { forwardRef, useRef, useEffect, useMemo } from 'react'; // Removed useState
-import { useFrame, useLoader } from '@react-three/fiber';
+import React, { forwardRef, useRef, useEffect, useMemo, useState } from 'react';
+import { useFrame, useLoader, useThree } from '@react-three/fiber';
 import { TextureLoader } from 'three';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
-import useStore from './store'; // Added
-import { calculateImageDimensions } from './utils'; // Import the new utility function
+import useStore from './store';
+import { calculateImageDimensions, createLowResTexture } from './utils';
 
 const sideMaterial = new THREE.MeshBasicMaterial({
   color: 'black',
   roughness: 0.8,
   flatShading: true,
 });
+
+// Distance threshold for switching to low-resolution textures
+const DISTANCE_THRESHOLD = 100;
+const MAX_WIDTH_LOD_CLOSE = 10; // Max width when image is close
+const MAX_WIDTH_LOD_FAR = 1;
 
 const ImagePlane = forwardRef(
   (
@@ -21,15 +26,21 @@ const ImagePlane = forwardRef(
     const {
       ensureImageComponentState,
       setBoxDimensionsForImage,
+      setHighResolutionForImage,
       imageComponentStates,
     } = useStore((state) => ({
       ensureImageComponentState: state.ensureImageComponentState,
       setBoxDimensionsForImage: state.setBoxDimensionsForImage,
+      setHighResolutionForImage: state.setHighResolutionForImage,
       imageComponentStates: state.imageComponentStates,
     }));
 
-    const boxDimensions = imageComponentStates[originalIndex]
-      ?.boxDimensions || [1, 1];
+    const highResolution =
+      imageComponentStates[originalIndex]?.highResolution === true;
+
+    const [currentRenderDimensions, setCurrentRenderDimensions] = useState([
+      1, 1,
+    ]);
 
     const texture = useLoader(
       TextureLoader,
@@ -40,7 +51,7 @@ const ImagePlane = forwardRef(
       (err) => {
         console.error(`TextureLoader failed for ${imageUrl}:`, err);
         if (onError) {
-          onError(err); // Call the onError prop passed from LazyImagePlane
+          onError(err);
         }
       }
     );
@@ -51,55 +62,110 @@ const ImagePlane = forwardRef(
       texture.flipY = false;
     }
 
+    // Create low-res version of the texture for distant viewing
+    const [lowResTexture, setLowResTexture] = useState(null);
+
+    useEffect(() => {
+      if (texture && texture.image) {
+        const lowRes = createLowResTexture(texture, 0.25);
+        if (lowRes) {
+          setLowResTexture(lowRes);
+        }
+      }
+    }, [texture]);
+
     const meshRef = useRef();
 
     useEffect(() => {
       const currentTexture = texture;
+      const currentLowResTexture = lowResTexture;
+
       return () => {
         if (currentTexture) {
           currentTexture.dispose();
         }
+        if (currentLowResTexture) {
+          currentLowResTexture.dispose();
+        }
       };
-    }, [texture]);
+    }, [texture, lowResTexture]);
 
     useEffect(() => {
-      if (texture && texture.image) {
-        const [newWidth, newHeight] = calculateImageDimensions(texture.image);
+      const targetMaxWidth = highResolution
+        ? MAX_WIDTH_LOD_CLOSE
+        : MAX_WIDTH_LOD_FAR;
 
-        const currentDimensions = imageComponentStates[originalIndex]
-          ?.boxDimensions || [1, 1];
-        if (
-          currentDimensions[0] !== newWidth ||
-          currentDimensions[1] !== newHeight
-        ) {
-          setBoxDimensionsForImage(originalIndex, [newWidth, newHeight]);
-        }
+      if (texture && texture.image) {
+        const [newWidth, newHeight] = calculateImageDimensions(
+          texture.image,
+          targetMaxWidth
+        );
+        setCurrentRenderDimensions([newWidth, newHeight]);
+      } else {
+        // Fallback if texture isn't loaded, using [1,1] as calculateImageDimensions would for a null image
+        setCurrentRenderDimensions([1, 1]);
+      }
+    }, [texture, highResolution, originalIndex]); // Recalculate when texture or highResolution status changes
+
+    const camera = useThree((state) => state.camera); // Get the camera from Three.js
+
+    useEffect(() => {
+      if (meshRef.current && texture && lowResTexture) {
+        const distance = camera.position.distanceTo(meshRef.current.position);
+        const shouldBeHighRes = distance < DISTANCE_THRESHOLD;
+
+        // Always set the initial state
+        setHighResolutionForImage(originalIndex, shouldBeHighRes);
       }
     }, [
+      meshRef,
       texture,
+      lowResTexture,
+      camera,
       originalIndex,
-      imageComponentStates,
-      setBoxDimensionsForImage,
+      setHighResolutionForImage,
     ]);
+
+    // Continuously check distance from camera and update resolution as needed
+    useFrame(({ camera }) => {
+      if (meshRef.current && texture && lowResTexture) {
+        const distance = camera.position.distanceTo(meshRef.current.position);
+        const shouldBeHighRes = distance < DISTANCE_THRESHOLD;
+
+        // Only update if the state needs to change to avoid unnecessary renders
+        if (highResolution !== shouldBeHighRes) {
+          setHighResolutionForImage(originalIndex, shouldBeHighRes);
+        }
+      }
+    });
 
     const boxDepth = 0.05;
     const materials = useMemo(() => {
+      // Use appropriate texture based on distance
+      let activeTexture;
+
+      if (highResolution) {
+        activeTexture = texture;
+      } else {
+        activeTexture = lowResTexture || texture; // Fallback to texture if lowResTexture isn't ready
+      }
+
       return [
         sideMaterial,
         sideMaterial,
         sideMaterial,
         sideMaterial,
         new THREE.MeshBasicMaterial({
-          map: texture,
+          map: activeTexture,
           toneMapped: false,
           side: THREE.FrontSide,
         }),
         sideMaterial,
       ];
-    }, [texture]);
+    }, [texture, lowResTexture, highResolution]);
 
     const direction = useMemo(() => new THREE.Vector3(), []);
-    const lastUpdateRef = useRef(0);
+
     const UPDATE_INTERVAL = 50;
 
     useFrame(
@@ -126,12 +192,15 @@ const ImagePlane = forwardRef(
         userData={{ originalIndex }}
         onClick={onClick}
       >
-        <boxGeometry attach="geometry" args={[...boxDimensions, boxDepth]} />
+        <boxGeometry
+          attach="geometry"
+          args={[...currentRenderDimensions, boxDepth]}
+        />
         {user && (
           <Html
             position={[
-              boxDimensions[0] / 2 - 0.5,
-              boxDimensions[1] / 2 - 0.5,
+              currentRenderDimensions[0] / 2 - 0.5,
+              currentRenderDimensions[1] / 2 - 0.5,
               0.1,
             ]}
           >

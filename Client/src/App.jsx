@@ -291,11 +291,6 @@ function App() {
           );
 
           setTargetPosition(newTargetPosition);
-
-          console.log(
-            `Clicked on image ${index}, setting target to:`,
-            newTargetPosition
-          );
         }
       }
     },
