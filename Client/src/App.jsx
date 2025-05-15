@@ -75,7 +75,7 @@ const VisibilityUpdater = ({
   const lastUpdateTime = useRef(0);
   const frameSkip = useRef(0);
 
-  const FRAME_SKIP = 5;
+  const FRAME_SKIP = 60;
 
   const frustum = useMemo(() => new THREE.Frustum(), []);
   const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
@@ -201,7 +201,7 @@ function App() {
 
   const VISIBLE_DISTANCE_THRESHOLD = 130;
 
-  const sphereRadius = useMemo(() => 10 + images.length * 0.5, [images.length]);
+  const sphereRadius = useMemo(() => 10 + images.length * 0.3, [images.length]);
 
   const imagesPositions = useMemo(() => {
     const spherePositions = calculateSpherePositions(images, sphereRadius);

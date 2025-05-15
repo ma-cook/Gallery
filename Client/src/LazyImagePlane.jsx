@@ -52,30 +52,16 @@ const LazyImagePlane = ({
   }
 
   return (
-    <Suspense
-      fallback={
-        <mesh position={position}>
-          <boxGeometry args={[1, 1, 0.05]} />
-          <meshBasicMaterial color="#333333" />
-        </mesh>
-      }
-    >
-      {hasError ? (
-        <mesh position={position}>
-          <boxGeometry args={[1, 1, 0.05]} />
-          <meshBasicMaterial color="#ff0000" />
-        </mesh>
-      ) : (
-        <ImagePlane
-          originalIndex={originalIndex}
-          position={position}
-          onClick={onClick}
-          imageUrl={imageUrl}
-          user={user}
-          onDelete={onDelete}
-          onError={handleError} // This now calls the store action
-        />
-      )}
+    <Suspense fallback={<Loader />}>
+      <ImagePlane
+        originalIndex={originalIndex}
+        position={position}
+        onClick={onClick}
+        imageUrl={imageUrl}
+        user={user}
+        onDelete={onDelete}
+        onError={handleError} // This now calls the store action
+      />
     </Suspense>
   );
 };

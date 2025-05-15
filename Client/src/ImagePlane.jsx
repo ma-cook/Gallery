@@ -46,7 +46,10 @@ const ImagePlane = forwardRef(
       TextureLoader,
       imageUrl,
       (loader) => {
-        // Optional: You can configure the loader here if needed
+        // Use the global loading manager if available
+        if (window.THREE_LOADING_MANAGER) {
+          loader.manager = window.THREE_LOADING_MANAGER;
+        }
       },
       (err) => {
         console.error(`TextureLoader failed for ${imageUrl}:`, err);
