@@ -27,27 +27,63 @@ export function calculateImageDimensions(image, maxWidth = 100) {
 }
 
 // Create a downscaled version of the texture for LOD (Level of Detail)
+// Worker pool is removed as per request to avoid web worker issues.
+
 export function createLowResTexture(texture, scale = 0.25) {
-  if (!texture || !texture.image) return null;
+  if (!texture || !texture.image) {
+    return Promise.resolve(null); // Return a resolved promise with null
+  }
 
-  // Create a canvas for downscaling
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const imageSource = texture.image; // HTMLImageElement, ImageBitmap, HTMLCanvasElement, etc.
+  // Ensure width and height are valid numbers greater than 0
+  const originalWidth = Number(imageSource.naturalWidth || imageSource.width);
+  const originalHeight = Number(
+    imageSource.naturalHeight || imageSource.height
+  );
 
-  // Set canvas dimensions to a fraction of the original image
-  const width = Math.max(32, Math.floor(texture.image.width * scale));
-  const height = Math.max(32, Math.floor(texture.image.height * scale));
+  if (
+    isNaN(originalWidth) ||
+    isNaN(originalHeight) ||
+    originalWidth <= 0 ||
+    originalHeight <= 0
+  ) {
+    console.warn(
+      'Image source for low-res texture has invalid or zero dimensions.'
+    );
+    return Promise.resolve(null);
+  }
 
-  canvas.width = width;
-  canvas.height = height;
+  return new Promise((resolve, reject) => {
+    try {
+      const scaledWidth = Math.max(1, Math.round(originalWidth * scale));
+      const scaledHeight = Math.max(1, Math.round(originalHeight * scale));
 
-  // Draw the image at the reduced resolution
-  ctx.drawImage(texture.image, 0, 0, width, height);
+      const canvas = document.createElement('canvas');
+      canvas.width = scaledWidth;
+      canvas.height = scaledHeight;
 
-  // Create a new texture from the canvas
-  const lowResTexture = texture.clone();
-  lowResTexture.image = canvas;
-  lowResTexture.needsUpdate = true;
+      const ctx = canvas.getContext('2d');
+      // imageSource can be HTMLImageElement, SVGImageElement, HTMLVideoElement, HTMLCanvasElement, ImageBitmap, OffscreenCanvas.
+      // All are valid for drawImage.
+      ctx.drawImage(imageSource, 0, 0, scaledWidth, scaledHeight);
 
-  return lowResTexture;
+      // createImageBitmap can take an ImageBitmapSource (which canvas is)
+      createImageBitmap(canvas)
+        .then((imageBitmap) => {
+          const lowResThreeTexture = texture.clone(); // Clone the original texture
+          lowResThreeTexture.image = imageBitmap; // Replace its image
+          lowResThreeTexture.source.data = imageBitmap; // Ensure source data is updated
+          lowResThreeTexture.needsUpdate = true; // Signal Three.js to update the GPU texture
+
+          resolve(lowResThreeTexture);
+        })
+        .catch((err) => {
+          console.error('Error creating ImageBitmap for low-res texture:', err);
+          reject(err); // Reject the main promise
+        });
+    } catch (error) {
+      console.error('Error in createLowResTexture synchronous part:', error);
+      reject(error); // Reject the main promise
+    }
+  });
 }

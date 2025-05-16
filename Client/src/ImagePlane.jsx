@@ -69,13 +69,42 @@ const ImagePlane = forwardRef(
     const [lowResTexture, setLowResTexture] = useState(null);
 
     useEffect(() => {
+      let isMounted = true;
+
       if (texture && texture.image) {
-        const lowRes = createLowResTexture(texture, 0.25);
-        if (lowRes) {
-          setLowResTexture(lowRes);
+        createLowResTexture(texture, 0.25)
+          .then((generatedLowResTexture) => {
+            if (isMounted) {
+              if (generatedLowResTexture) {
+                setLowResTexture(generatedLowResTexture);
+              } else {
+                setLowResTexture(null); // Explicitly set to null if creation failed or returned null
+              }
+            }
+          })
+          .catch((err) => {
+            if (isMounted) {
+              console.error(
+                'Failed to create low-res texture for ImagePlane:',
+                err
+              );
+              setLowResTexture(null); // Set to null on error
+            }
+          });
+      } else {
+        // This case handles when texture or texture.image is null or undefined initially
+        // or if they become null/undefined after being set.
+        if (isMounted) {
+          setLowResTexture(null); // Reset if no source texture/image
         }
       }
-    }, [texture]);
+
+      return () => {
+        isMounted = false;
+        // Cleanup for lowResTexture is handled by the next useEffect
+        // when texture or lowResTexture itself changes, or when the component unmounts.
+      };
+    }, [texture]); // Dependency on texture ensures this runs if the source texture changes
 
     const meshRef = useRef();
 
