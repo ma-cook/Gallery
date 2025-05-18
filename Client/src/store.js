@@ -14,7 +14,7 @@ const useStore = create((set) => ({
   textColor: '#fff4d2',
   uploadProgress: 0,
   visibleImageIndices: [],
-  imageComponentStates: {}, // New state for image component-specific data
+  imageComponentStates: {},
 
   // Actions
   setImages: (updater) =>
@@ -52,48 +52,27 @@ const useStore = create((set) => ({
       return {}; // No change if already initialized
     }),
 
-  setBoxDimensionsForImage: (index, boxDimensions) =>
-    set((state) => ({
-      imageComponentStates: {
-        ...state.imageComponentStates,
-        [index]: {
-          ...(state.imageComponentStates[index] || {}),
-          boxDimensions,
+  // Consolidated action to update parts of an image's component state
+  updateImageComponentState: (index, partialState) =>
+    set((state) => {
+      const existingStateAtIndex = state.imageComponentStates[index] || {
+        // Provide a minimal default structure if ensureImageComponentState wasn't called,
+        // though ideally ensureImageComponentState handles full initialization.
+        boxDimensions: [1, 1],
+        hasLoaded: false,
+        hasError: false,
+        highResolution: false,
+      };
+      return {
+        imageComponentStates: {
+          ...state.imageComponentStates,
+          [index]: {
+            ...existingStateAtIndex,
+            ...partialState, // Spread the new properties
+          },
         },
-      },
-    })),
-
-  setHasLoadedForImage: (index, hasLoaded) =>
-    set((state) => ({
-      imageComponentStates: {
-        ...state.imageComponentStates,
-        [index]: {
-          ...(state.imageComponentStates[index] || {}),
-          hasLoaded,
-        },
-      },
-    })),
-  setHasErrorForImage: (index, hasError) =>
-    set((state) => ({
-      imageComponentStates: {
-        ...state.imageComponentStates,
-        [index]: {
-          ...(state.imageComponentStates[index] || {}),
-          hasError,
-        },
-      },
-    })),
-
-  setHighResolutionForImage: (index, highResolution) =>
-    set((state) => ({
-      imageComponentStates: {
-        ...state.imageComponentStates,
-        [index]: {
-          ...(state.imageComponentStates[index] || {}),
-          highResolution,
-        },
-      },
-    })),
+      };
+    }),
 }));
 
 export default useStore;

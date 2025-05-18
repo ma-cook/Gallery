@@ -81,7 +81,7 @@ const VisibilityUpdater = ({
   const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
 
   const outOfViewCounters = useRef({});
-  const OUT_OF_VIEW_THRESHOLD = 30;
+  const OUT_OF_VIEW_THRESHOLD = 20;
 
   useFrame(({ camera, clock }) => {
     frameSkip.current = (frameSkip.current + 1) % FRAME_SKIP;

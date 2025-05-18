@@ -14,13 +14,11 @@ const LazyImagePlane = ({
 }) => {
   const {
     ensureImageComponentState,
-    setHasLoadedForImage,
-    setHasErrorForImage,
+    updateImageComponentState, // Changed
     imageComponentStates,
   } = useStore((state) => ({
     ensureImageComponentState: state.ensureImageComponentState,
-    setHasLoadedForImage: state.setHasLoadedForImage,
-    setHasErrorForImage: state.setHasErrorForImage,
+    updateImageComponentState: state.updateImageComponentState, // Changed
     imageComponentStates: state.imageComponentStates,
   }));
   useEffect(() => {
@@ -38,13 +36,13 @@ const LazyImagePlane = ({
 
   useEffect(() => {
     if (isVisible && !loadedRef.current) {
-      setHasLoadedForImage(originalIndex, true);
+      updateImageComponentState(originalIndex, { hasLoaded: true }); // Changed
       loadedRef.current = true;
     }
-  }, [isVisible, originalIndex, setHasLoadedForImage]);
+  }, [isVisible, originalIndex, updateImageComponentState]); // Changed
 
   const handleError = () => {
-    setHasErrorForImage(originalIndex, true);
+    updateImageComponentState(originalIndex, { hasError: true }); // Changed
   };
 
   if (!isVisible && !hasLoaded) {

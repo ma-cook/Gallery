@@ -37,7 +37,7 @@ const CustomCamera = ({ targetPosition }) => {
 
   // Use a timestamp to control animation timing
   const startTimeRef = useRef(0);
-  const animationDurationRef = useRef(800); // milliseconds
+  const animationDurationRef = useRef(600); // milliseconds (was 800)
 
   useFrame((state) => {
     if (isMovingRef.current) {
@@ -63,7 +63,7 @@ const CustomCamera = ({ targetPosition }) => {
       // Use easing function for smoother movement
       cameraRef.current.position.lerp(
         adjustedPositionVector.current,
-        0.05 + easeProgress * 0.2
+        0.08 + easeProgress * 0.25 // Increased responsiveness (was 0.05 + easeProgress * 0.2)
       );
 
       // Stop moving if the animation is complete
@@ -73,7 +73,7 @@ const CustomCamera = ({ targetPosition }) => {
       }
     } else {
       // Only update controls target when not in animated movement
-      controlsRef.current.target.lerp(targetRef.current, 0.1);
+      controlsRef.current.target.lerp(targetRef.current, 0.15); // Increased responsiveness (was 0.1)
       controlsRef.current.update();
     }
 
@@ -91,11 +91,11 @@ const CustomCamera = ({ targetPosition }) => {
 
     // Apply constraints with smoothing
     cameraRef.current.position.x +=
-      (constrainedX - cameraRef.current.position.x) * 0.1;
+      (constrainedX - cameraRef.current.position.x) * 0.15; // Increased responsiveness (was 0.1)
     cameraRef.current.position.y +=
-      (constrainedY - cameraRef.current.position.y) * 0.1;
+      (constrainedY - cameraRef.current.position.y) * 0.15; // Increased responsiveness (was 0.1)
     cameraRef.current.position.z +=
-      (constrainedZ - cameraRef.current.position.z) * 0.1;
+      (constrainedZ - cameraRef.current.position.z) * 0.15; // Increased responsiveness (was 0.1)
   });
 
   // Easing function for smoother animations
@@ -121,9 +121,9 @@ const CustomCamera = ({ targetPosition }) => {
         enablePan={true}
         enableRotate={true}
         enableDamping={true}
-        dampingFactor={0.1} // Increased from 0.05 for smoother motion
-        rotateSpeed={0.5} // Reduced from default 1.0 for smoother rotation
-        zoomSpeed={0.8} // Slightly reduced for better control
+        dampingFactor={0.05} // Reduced for more responsive control (was 0.1)
+        rotateSpeed={0.5}
+        zoomSpeed={0.8}
         maxDistance={150}
         // Add performance optimizations
         maxPolarAngle={Math.PI / 1.75} // Limit rotation to avoid rendering unnecessary areas

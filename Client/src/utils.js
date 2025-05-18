@@ -23,7 +23,7 @@ export function calculateImageDimensions(image, maxWidth = 100) {
     newWidth = maxWidth * aspectRatio;
   }
 
-  return [Math.round(newWidth), Math.round(newHeight)];
+  return [newWidth, newHeight];
 }
 
 // Create a downscaled version of the texture for LOD (Level of Detail)

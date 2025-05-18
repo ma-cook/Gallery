@@ -5,42 +5,39 @@ import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
 import useStore from './store';
-import { calculateImageDimensions, createLowResTexture } from './utils';
-
-const sideMaterial = new THREE.MeshBasicMaterial({
-  color: 'black',
-  roughness: 0.8,
-  flatShading: true,
-});
+import { createLowResTexture } from './utils';
 
 // Distance threshold for switching to low-resolution textures
-const DISTANCE_THRESHOLD = 100;
-const MAX_WIDTH_LOD_CLOSE = 10; // Max width when image is close
-const MAX_WIDTH_LOD_FAR = 1;
+const DISTANCE_THRESHOLD = 60;
+
+const TARGET_SPRITE_SCREEN_WIDTH = 10;
 
 const ImagePlane = forwardRef(
   (
     { originalIndex, position, onClick, imageUrl, user, onDelete, onError },
     ref
   ) => {
-    const {
-      ensureImageComponentState,
-      setBoxDimensionsForImage,
-      setHighResolutionForImage,
-      imageComponentStates,
-    } = useStore((state) => ({
-      ensureImageComponentState: state.ensureImageComponentState,
-      setBoxDimensionsForImage: state.setBoxDimensionsForImage,
-      setHighResolutionForImage: state.setHighResolutionForImage,
-      imageComponentStates: state.imageComponentStates,
-    }));
+    const updateImageComponentState = useStore(
+      (state) => state.updateImageComponentState
+    );
+    // Select only the state for the current image index for better reactivity
+    const imageStateForThisIndex = useStore(
+      (state) => state.imageComponentStates[originalIndex]
+    );
 
-    const highResolution =
-      imageComponentStates[originalIndex]?.highResolution === true;
+    // Determine highResolution status from the specific image's state in the store
+    const highResolution = imageStateForThisIndex?.highResolution === true;
 
-    const [currentRenderDimensions, setCurrentRenderDimensions] = useState([
-      1, 1,
-    ]);
+    // Initialize with dimensions reflecting the target screen width AND initial highResolution status
+    const [currentRenderDimensions, setCurrentRenderDimensions] = useState(
+      () => {
+        const initialHighRes = imageStateForThisIndex?.highResolution === true;
+        const initialTargetScreenWidth = initialHighRes
+          ? TARGET_SPRITE_SCREEN_WIDTH
+          : TARGET_SPRITE_SCREEN_WIDTH / 2;
+        return [initialTargetScreenWidth, initialTargetScreenWidth]; // Assuming 1:1 aspect ratio initially, will be corrected by useEffect
+      }
+    );
 
     const texture = useLoader(
       TextureLoader,
@@ -92,8 +89,6 @@ const ImagePlane = forwardRef(
             }
           });
       } else {
-        // This case handles when texture or texture.image is null or undefined initially
-        // or if they become null/undefined after being set.
         if (isMounted) {
           setLowResTexture(null); // Reset if no source texture/image
         }
@@ -101,12 +96,10 @@ const ImagePlane = forwardRef(
 
       return () => {
         isMounted = false;
-        // Cleanup for lowResTexture is handled by the next useEffect
-        // when texture or lowResTexture itself changes, or when the component unmounts.
       };
-    }, [texture]); // Dependency on texture ensures this runs if the source texture changes
+    }, [texture]);
 
-    const meshRef = useRef();
+    const spriteRef = useRef();
 
     useEffect(() => {
       const currentTexture = texture;
@@ -123,123 +116,115 @@ const ImagePlane = forwardRef(
     }, [texture, lowResTexture]);
 
     useEffect(() => {
-      const targetMaxWidth = highResolution
-        ? MAX_WIDTH_LOD_CLOSE
-        : MAX_WIDTH_LOD_FAR;
+      // This effect calculates sprite dimensions based on a fixed screen width
+      // and the texture's aspect ratio, adjusted by distance.
+
+      // Determine the actual target screen width based on resolution (distance)
+      const actualTargetScreenWidth = highResolution
+        ? TARGET_SPRITE_SCREEN_WIDTH
+        : TARGET_SPRITE_SCREEN_WIDTH / 2; // Half size when far away
 
       if (texture && texture.image) {
-        const [newWidth, newHeight] = calculateImageDimensions(
-          texture.image,
-          targetMaxWidth
-        );
-        setCurrentRenderDimensions([newWidth, newHeight]);
+        const img = texture.image;
+        const imgWidth = img.naturalWidth || img.width;
+        const imgHeight = img.naturalHeight || img.height;
+
+        if (imgWidth > 0 && imgHeight > 0) {
+          const aspectRatio = imgWidth / imgHeight;
+          // Calculate height based on the actual target screen width and aspect ratio
+          const screenHeight = actualTargetScreenWidth / aspectRatio;
+          setCurrentRenderDimensions([actualTargetScreenWidth, screenHeight]);
+        } else {
+          // Fallback for invalid image dimensions, use square based on actual target screen width
+          setCurrentRenderDimensions([
+            actualTargetScreenWidth,
+            actualTargetScreenWidth,
+          ]);
+        }
       } else {
-        // Fallback if texture isn't loaded, using [1,1] as calculateImageDimensions would for a null image
-        setCurrentRenderDimensions([1, 1]);
+        // Before texture.image is loaded, maintain dimensions based on actual target screen width.
+        // This ensures a consistent size even before the image aspect ratio is known.
+        setCurrentRenderDimensions([
+          actualTargetScreenWidth,
+          actualTargetScreenWidth, // Assuming 1:1 aspect ratio until image loads
+        ]);
       }
-    }, [texture, highResolution, originalIndex]); // Recalculate when texture or highResolution status changes
+    }, [texture, highResolution]); // Added highResolution to dependencies
 
-    const camera = useThree((state) => state.camera); // Get the camera from Three.js
-
-    useEffect(() => {
-      if (meshRef.current && texture && lowResTexture) {
-        const distance = camera.position.distanceTo(meshRef.current.position);
+    useFrame(({ camera: frameCamera }) => {
+      // Continuously update highResolution state in useFrame for responsiveness
+      if (spriteRef.current && texture) {
+        const distance = frameCamera.position.distanceTo(
+          spriteRef.current.position
+        );
+        // Always get the absolute latest state from the store for comparison
+        const currentStoreHighRes =
+          useStore.getState().imageComponentStates[originalIndex]
+            ?.highResolution;
         const shouldBeHighRes = distance < DISTANCE_THRESHOLD;
 
-        // Always set the initial state
-        setHighResolutionForImage(originalIndex, shouldBeHighRes);
-      }
-    }, [
-      meshRef,
-      texture,
-      lowResTexture,
-      camera,
-      originalIndex,
-      setHighResolutionForImage,
-    ]);
-
-    // Continuously check distance from camera and update resolution as needed
-    useFrame(({ camera }) => {
-      if (meshRef.current && texture && lowResTexture) {
-        const distance = camera.position.distanceTo(meshRef.current.position);
-        const shouldBeHighRes = distance < DISTANCE_THRESHOLD;
-
-        // Only update if the state needs to change to avoid unnecessary renders
-        if (highResolution !== shouldBeHighRes) {
-          setHighResolutionForImage(originalIndex, shouldBeHighRes);
+        if (currentStoreHighRes !== shouldBeHighRes) {
+          updateImageComponentState(originalIndex, {
+            highResolution: shouldBeHighRes,
+          });
         }
       }
     });
 
-    const boxDepth = 0.05;
-    const materials = useMemo(() => {
-      // Use appropriate texture based on distance
-      let activeTexture;
-
+    // Determine the texture to be used by the material
+    const materialTexture = useMemo(() => {
       if (highResolution) {
-        activeTexture = texture;
-      } else {
-        activeTexture = lowResTexture || texture; // Fallback to texture if lowResTexture isn't ready
+        return texture; // Close up, use high-res
       }
-
-      return [
-        sideMaterial,
-        sideMaterial,
-        sideMaterial,
-        sideMaterial,
-        new THREE.MeshBasicMaterial({
-          map: activeTexture,
-          toneMapped: false,
-          side: THREE.FrontSide,
-        }),
-        sideMaterial,
-      ];
+      // Distant: use low-res. If low-res is not ready, this will be null.
+      return lowResTexture;
     }, [texture, lowResTexture, highResolution]);
-
-    const direction = useMemo(() => new THREE.Vector3(), []);
-
-    const UPDATE_INTERVAL = 50;
-
-    useFrame(
-      ({ camera, clock }) => {
-        if (!meshRef.current) return;
-
-        direction
-          .subVectors(meshRef.current.position, camera.position)
-          .normalize();
-        meshRef.current.lookAt(camera.position);
-        meshRef.current.rotation.z += Math.PI;
-      },
-      { frameloop: 'demand', throttle: UPDATE_INTERVAL }
-    );
 
     const handleDelete = () => onDelete(originalIndex);
 
+    const spriteScale = useMemo(() => {
+      return [currentRenderDimensions[0], currentRenderDimensions[1], 1];
+    }, [currentRenderDimensions]);
+
+    // Conditional Rendering:
+    // 1. Main texture must be loaded.
+    // 2. The texture to be mapped to the material (materialTexture) must be available.
+    //    - If close (highResolution=true), materialTexture is `texture`.
+    //    - If distant (highResolution=false), materialTexture is `lowResTexture`.
+    //      If `lowResTexture` is null, then `materialTexture` is null, and we don't render.
+    if (!texture || !materialTexture) {
+      return null;
+    }
+
     return (
-      <mesh
+      <sprite
         position={position}
-        ref={ref || meshRef}
-        castShadow
-        material={materials}
+        ref={spriteRef} // Ensure internal spriteRef is used for consistent distance calculation
+        scale={spriteScale}
         userData={{ originalIndex }}
         onClick={onClick}
       >
-        <boxGeometry
-          attach="geometry"
-          args={[...currentRenderDimensions, boxDepth]}
+        <spriteMaterial
+          attach="material"
+          map={materialTexture} // Use the determined materialTexture
+          toneMapped={false}
+          sizeAttenuation={true} // Ensures sprite maintains screen size
         />
-        {user && (
-          <Html
-            position={[
-              currentRenderDimensions[0] / 2 - 0.5,
-              currentRenderDimensions[1] / 2 - 0.5,
-              0.1,
-            ]}
-          >
-            <DeleteButton onClick={handleDelete} />
-          </Html>
-        )}
-      </mesh>
+        {user &&
+          materialTexture && ( // Check materialTexture here too for consistency
+            <Html
+              // Position in sprite's local space (e.g., near top-right).
+              // Assumes sprite's local unscaled size is roughly 1x1 centered at origin.
+              // Adjust these values based on DeleteButton's anchor and desired placement.
+              position={[0.4, 0.4, 0.1]}
+              distanceFactor={10} // Makes Html content scale with distance like the sprite.
+              // Adjust this value as needed. (e.g. 10-15 often works well)
+            >
+              {/* Ensure DeleteButton component has a fixed CSS size (e.g., 20px x 20px) */}
+              <DeleteButton onClick={handleDelete} />
+            </Html>
+          )}
+      </sprite>
     );
   }
 );
