@@ -504,6 +504,47 @@ function App() {
           )}
         </Suspense>
       </Canvas>
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '5em',
+          backgroundColor: 'rgba(255, 255, 255, 0.5)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '0 2em',
+          boxSizing: 'border-box',
+          zIndex: 1000,
+        }}
+      >
+        <button
+          onClick={() => triggerTransition('plane')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: textColor,
+            fontSize: '1.5em',
+            cursor: 'pointer',
+          }}
+        >
+          Plane Layout
+        </button>
+        <button
+          onClick={() => triggerTransition('sphere')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: textColor,
+            fontSize: '1.5em',
+            cursor: 'pointer',
+          }}
+        >
+          Sphere Layout
+        </button>
+      </div>
     </div>
   );
 }

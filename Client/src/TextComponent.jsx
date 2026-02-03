@@ -18,16 +18,8 @@ function Text3DComponent({
   titleOrbColor,
   textColor,
 }) {
-  const groupRefs = useRef([
-    React.createRef(),
-    React.createRef(),
-    React.createRef(),
-  ]);
-  const textRefs = useRef([
-    React.createRef(),
-    React.createRef(),
-    React.createRef(),
-  ]);
+  const groupRefs = useRef([React.createRef()]);
+  const textRefs = useRef([React.createRef()]);
   const sphereRef = useRef();
   const cubeRef = useRef();
   const [positionsInitialized, setPositionsInitialized] = useState(false);
@@ -35,11 +27,7 @@ function Text3DComponent({
   const geometries = useMemo(
     () => ({
       sphere: new THREE.SphereGeometry(2, 16, 32),
-      boxes: [
-        new THREE.BoxGeometry(28, 0.5, 2),
-        new THREE.BoxGeometry(20, 4, 2),
-        new THREE.BoxGeometry(18, 4, 2),
-      ],
+      boxes: [new THREE.BoxGeometry(28, 0.5, 2)],
     }),
     []
   );
@@ -70,11 +58,7 @@ function Text3DComponent({
     if (!positionsInitialized) {
       textRefs.current.forEach(adjustPivot);
 
-      const positions = [
-        { x: 0, y: sphereRadius + 20, z: 0 },
-        { x: 30, y: sphereRadius + 12, z: 0 },
-        { x: -30, y: sphereRadius + 12, z: 0 },
-      ];
+      const positions = [{ x: 0, y: sphereRadius + 20, z: 0 }];
 
       groupRefs.current.forEach((ref, index) => {
         if (ref.current) {
@@ -99,24 +83,6 @@ function Text3DComponent({
       bevelSize: 0.1,
       meshIndex: 0,
       onClick: () => setIsAuthModalOpen(true),
-    },
-    {
-      text: 'Sphere Layout',
-      size: 2,
-      height: 0.5,
-      bevelThickness: 0.05,
-      bevelSize: 0.05,
-      meshIndex: 1,
-      onClick: () => triggerTransition('sphere'),
-    },
-    {
-      text: 'Plane Layout',
-      size: 2,
-      height: 0.5,
-      bevelThickness: 0.05,
-      bevelSize: 0.05,
-      meshIndex: 2,
-      onClick: () => triggerTransition('plane'),
     },
   ];
 

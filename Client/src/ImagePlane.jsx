@@ -59,7 +59,7 @@ const ImagePlane = forwardRef(
     if (texture) {
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
-      texture.flipY = false;
+      texture.flipY = true; // Keep Y orientation correct for sprites
     }
 
     // Create low-res version of the texture for distant viewing
