@@ -1,16 +1,21 @@
 import React, { forwardRef, useRef, useEffect, useMemo, useState } from 'react';
-import { useFrame, useLoader, useThree } from '@react-three/fiber';
-import { TextureLoader } from 'three';
+import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
 import useStore from './store';
 import { createLowResTexture } from './utils';
+import { textureLoadQueue } from './TextureLoadQueue';
+import { RoundedSpriteMaterial } from './RoundedSpriteMaterial';
 
 // Distance threshold for switching to low-resolution textures
 const DISTANCE_THRESHOLD = 60;
+const MAX_RENDER_DISTANCE = 200; // Don't render sprites beyond this distance
 
 const TARGET_SPRITE_SCREEN_WIDTH = 10;
+
+// Global texture cache to prevent reloading
+const textureCache = new Map();
 
 const ImagePlane = forwardRef(
   (
@@ -27,6 +32,9 @@ const ImagePlane = forwardRef(
 
     // Determine highResolution status from the specific image's state in the store
     const highResolution = imageStateForThisIndex?.highResolution === true;
+    
+    // Track distance for render culling
+    const [isWithinRenderDistance, setIsWithinRenderDistance] = useState(true);
 
     // Initialize with dimensions reflecting the target screen width AND initial highResolution status
     const [currentRenderDimensions, setCurrentRenderDimensions] = useState(
@@ -39,28 +47,47 @@ const ImagePlane = forwardRef(
       }
     );
 
-    const texture = useLoader(
-      TextureLoader,
-      imageUrl,
-      (loader) => {
-        // Use the global loading manager if available
-        if (window.THREE_LOADING_MANAGER) {
-          loader.manager = window.THREE_LOADING_MANAGER;
-        }
-      },
-      (err) => {
-        console.error(`TextureLoader failed for ${imageUrl}:`, err);
-        if (onError) {
-          onError(err);
-        }
-      }
-    );
+    // Manual texture loading to avoid Suspense unmounting
+    const [texture, setTexture] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    if (texture) {
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      texture.flipY = true; // Keep Y orientation correct for sprites
-    }
+    useEffect(() => {
+      let isMounted = true;
+      const loader = new THREE.TextureLoader();
+      
+      if (window.THREE_LOADING_MANAGER) {
+        loader.manager = window.THREE_LOADING_MANAGER;
+      }
+
+      loader.load(
+        imageUrl,
+        (loadedTexture) => {
+          if (isMounted) {
+            loadedTexture.minFilter = THREE.LinearFilter;
+            loadedTexture.magFilter = THREE.LinearFilter;
+            loadedTexture.generateMipmaps = false;
+            loadedTexture.needsUpdate = true;
+            setTexture(loadedTexture);
+            setIsLoading(false);
+          }
+        },
+        undefined,
+        (err) => {
+          console.error(`TextureLoader failed for ${imageUrl}:`, err);
+          if (isMounted && onError) {
+            onError(err);
+          }
+          setIsLoading(false);
+        }
+      );
+
+      return () => {
+        isMounted = false;
+        if (texture) {
+          texture.dispose();
+        }
+      };
+    }, [imageUrl]);
 
     // Create low-res version of the texture for distant viewing
     const [lowResTexture, setLowResTexture] = useState(null);
@@ -69,7 +96,8 @@ const ImagePlane = forwardRef(
       let isMounted = true;
 
       if (texture && texture.image) {
-        createLowResTexture(texture, 0.25)
+        // Defer low-res texture generation to avoid blocking camera movement
+        textureLoadQueue.load(() => createLowResTexture(texture, 0.25, true))
           .then((generatedLowResTexture) => {
             if (isMounted) {
               if (generatedLowResTexture) {
@@ -100,6 +128,8 @@ const ImagePlane = forwardRef(
     }, [texture]);
 
     const spriteRef = useRef();
+    const distanceCheckCounter = useRef(0);
+    const DISTANCE_CHECK_INTERVAL = 10; // Check every 10 frames instead of every frame
 
     useEffect(() => {
       const currentTexture = texture;
@@ -152,11 +182,25 @@ const ImagePlane = forwardRef(
     }, [texture, highResolution]); // Added highResolution to dependencies
 
     useFrame(({ camera: frameCamera }) => {
+      // Debounce distance checks to improve performance
+      distanceCheckCounter.current++;
+      if (distanceCheckCounter.current < DISTANCE_CHECK_INTERVAL) {
+        return;
+      }
+      distanceCheckCounter.current = 0;
+
       // Continuously update highResolution state in useFrame for responsiveness
       if (spriteRef.current && texture) {
         const distance = frameCamera.position.distanceTo(
           spriteRef.current.position
         );
+        
+        // Check if sprite is within render distance
+        const withinDistance = distance < MAX_RENDER_DISTANCE;
+        if (withinDistance !== isWithinRenderDistance) {
+          setIsWithinRenderDistance(withinDistance);
+        }
+        
         // Always get the absolute latest state from the store for comparison
         const currentStoreHighRes =
           useStore.getState().imageComponentStates[originalIndex]
@@ -186,32 +230,53 @@ const ImagePlane = forwardRef(
       return [currentRenderDimensions[0], currentRenderDimensions[1], 1];
     }, [currentRenderDimensions]);
 
+    // Create lightweight rounded material only when texture changes
+    const spriteMaterial = useMemo(() => {
+      if (!materialTexture) return null;
+      return new RoundedSpriteMaterial(materialTexture, 0.08);
+    }, [materialTexture]);
+
+    // Cleanup
+    useEffect(() => {
+      return () => {
+        if (spriteMaterial) {
+          spriteMaterial.dispose();
+        }
+      };
+    }, [spriteMaterial]);
+
+
+
     // Conditional Rendering:
     // 1. Main texture must be loaded.
     // 2. The texture to be mapped to the material (materialTexture) must be available.
     //    - If close (highResolution=true), materialTexture is `texture`.
     //    - If distant (highResolution=false), materialTexture is `lowResTexture`.
     //      If `lowResTexture` is null, then `materialTexture` is null, and we don't render.
-    if (!texture || !materialTexture) {
+    // 3. If beyond max render distance, render invisible to keep useFrame running
+    if (!texture) {
       return null;
     }
+
+    // Render sprite invisible if out of range or no texture, but keep component mounted
+    const shouldRenderVisible = materialTexture && isWithinRenderDistance;
 
     return (
       <sprite
         position={position}
         ref={spriteRef} // Ensure internal spriteRef is used for consistent distance calculation
-        scale={spriteScale}
+        scale={shouldRenderVisible ? spriteScale : [0.001, 0.001, 0.001]} // Tiny scale when invisible
         userData={{ originalIndex }}
         onClick={onClick}
+        visible={shouldRenderVisible}
       >
-        <spriteMaterial
-          attach="material"
-          map={materialTexture} // Use the determined materialTexture
-          toneMapped={false}
-          sizeAttenuation={true} // Ensures sprite maintains screen size
-        />
+        {shouldRenderVisible && spriteMaterial && (
+          <primitive object={spriteMaterial} attach="material" />
+        )}
         {user &&
-          materialTexture && ( // Check materialTexture here too for consistency
+          materialTexture &&
+          highResolution &&
+          shouldRenderVisible && ( // Only render delete button when close (high res)
             <Html
               // Position in sprite's local space (e.g., near top-right).
               // Assumes sprite's local unscaled size is roughly 1x1 centered at origin.
@@ -219,6 +284,7 @@ const ImagePlane = forwardRef(
               position={[0.4, 0.4, 0.1]}
               distanceFactor={10} // Makes Html content scale with distance like the sprite.
               // Adjust this value as needed. (e.g. 10-15 often works well)
+              style={{ pointerEvents: 'auto' }}
             >
               {/* Ensure DeleteButton component has a fixed CSS size (e.g., 20px x 20px) */}
               <DeleteButton onClick={handleDelete} />

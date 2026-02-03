@@ -1,6 +1,5 @@
 import React, { useEffect, Suspense, useRef } from 'react'; // Removed useState
 import ImagePlane from './ImagePlane';
-import Loader from './Loader';
 import useStore from './store'; // Added
 
 const LazyImagePlane = ({
@@ -32,25 +31,28 @@ const LazyImagePlane = ({
   };
   const { hasLoaded, hasError } = componentState;
 
-  const loadedRef = useRef(false); // Remains for tracking initial mount visibility trigger
+  const shouldLoadRef = useRef(false); // Track if this image should ever load
 
   useEffect(() => {
-    if (isVisible && !loadedRef.current) {
-      updateImageComponentState(originalIndex, { hasLoaded: true }); // Changed
-      loadedRef.current = true;
+    // Once visible, mark as should load (never reset this)
+    if (isVisible && !shouldLoadRef.current) {
+      shouldLoadRef.current = true;
+      updateImageComponentState(originalIndex, { hasLoaded: true });
     }
-  }, [isVisible, originalIndex, updateImageComponentState]); // Changed
+  }, [isVisible, originalIndex, updateImageComponentState]);
 
   const handleError = () => {
-    updateImageComponentState(originalIndex, { hasError: true }); // Changed
+    updateImageComponentState(originalIndex, { hasError: true });
   };
 
-  if (!isVisible && !hasLoaded) {
+  // Don't render if never been visible
+  // Once loaded, keep rendering even if temporarily not visible
+  if (!shouldLoadRef.current && !hasLoaded) {
     return null;
   }
 
   return (
-    <Suspense fallback={<Loader />}>
+    <Suspense fallback={null}>
       <ImagePlane
         originalIndex={originalIndex}
         position={position}

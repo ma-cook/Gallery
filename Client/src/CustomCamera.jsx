@@ -38,6 +38,7 @@ const CustomCamera = ({ targetPosition }) => {
   // Use a timestamp to control animation timing
   const startTimeRef = useRef(0);
   const animationDurationRef = useRef(600); // milliseconds (was 800)
+  const constraintFrameCounter = useRef(0);
 
   useFrame((state) => {
     if (isMovingRef.current) {
@@ -80,22 +81,25 @@ const CustomCamera = ({ targetPosition }) => {
     // Always look at the target position
     cameraRef.current.lookAt(targetRef.current);
 
-    // Apply constraints with smoothing
-    const { x, y, z } = cameraRef.current.position;
-    const constrainedX = Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x));
-    const constrainedY = Math.max(minYPosition, y);
-    const constrainedZ = Math.max(
-      -planeHeight / 2,
-      Math.min(planeHeight / 2, z)
-    );
+    // Apply constraints with smoothing, but only every few frames for better performance
+    constraintFrameCounter.current++;
+    if (constraintFrameCounter.current % 2 === 0) { // Apply constraints every other frame
+      const { x, y, z } = cameraRef.current.position;
+      const constrainedX = Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x));
+      const constrainedY = Math.max(minYPosition, y);
+      const constrainedZ = Math.max(
+        -planeHeight / 2,
+        Math.min(planeHeight / 2, z)
+      );
 
-    // Apply constraints with smoothing
-    cameraRef.current.position.x +=
-      (constrainedX - cameraRef.current.position.x) * 0.15; // Increased responsiveness (was 0.1)
-    cameraRef.current.position.y +=
-      (constrainedY - cameraRef.current.position.y) * 0.15; // Increased responsiveness (was 0.1)
-    cameraRef.current.position.z +=
-      (constrainedZ - cameraRef.current.position.z) * 0.15; // Increased responsiveness (was 0.1)
+      // Apply constraints with smoothing
+      cameraRef.current.position.x +=
+        (constrainedX - cameraRef.current.position.x) * 0.15; // Increased responsiveness (was 0.1)
+      cameraRef.current.position.y +=
+        (constrainedY - cameraRef.current.position.y) * 0.15; // Increased responsiveness (was 0.1)
+      cameraRef.current.position.z +=
+        (constrainedZ - cameraRef.current.position.z) * 0.15; // Increased responsiveness (was 0.1)
+    }
   });
 
   // Easing function for smoother animations

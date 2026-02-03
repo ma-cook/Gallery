@@ -6,9 +6,11 @@ import React, {
   Suspense,
   lazy,
   useState,
+  startTransition,
 } from 'react';
 import { useFrame, Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
+import { Stats, Environment, Bvh } from '@react-three/drei';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import CustomCamera from './CustomCamera';
 import AuthModal from './AuthModal';
@@ -29,10 +31,11 @@ import {
   calculatePlanePositions,
 } from './layoutFunctions';
 import { handleSignIn } from './authFunctions';
-import Text3DComponent from './TextComponent';
+
 import OrbLight from './OrbLight';
 import SettingsModal from './SettingsModal';
 import useStore from './store';
+import { textureLoadQueue } from './TextureLoadQueue';
 
 const LazyImagePlane = lazy(() => import('./LazyImagePlane'));
 const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
@@ -56,6 +59,18 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
+  const CustomEnvironment = React.memo(() => {
+    return (
+      <Environment
+        background
+        backgroundBlurriness={0.5}
+        backgroundIntensity={0.2}
+        files="/syferfontein_1d_clear_puresky_4k.hdr"
+        preset={null}
+      />
+    );
+  });
+
 // Helper function for comparing sorted arrays
 function areSortedArraysEqual(a, b) {
   if (a.length !== b.length) return false;
@@ -75,7 +90,10 @@ const VisibilityUpdater = ({
   const lastUpdateTime = useRef(0);
   const frameSkip = useRef(0);
 
-  const FRAME_SKIP = 60;
+  // Adaptive frame skip: skip more frames when textures are loading
+  const getFrameSkipInterval = () => {
+    return textureLoadQueue.isLoading() ? 60 : 30; // Skip more when loading
+  };
 
   const frustum = useMemo(() => new THREE.Frustum(), []);
   const projScreenMatrix = useMemo(() => new THREE.Matrix4(), []);
@@ -84,6 +102,7 @@ const VisibilityUpdater = ({
   const OUT_OF_VIEW_THRESHOLD = 20;
 
   useFrame(({ camera, clock }) => {
+    const FRAME_SKIP = getFrameSkipInterval();
     frameSkip.current = (frameSkip.current + 1) % FRAME_SKIP;
     if (frameSkip.current !== 0) return;
 
@@ -108,10 +127,22 @@ const VisibilityUpdater = ({
       outOfViewCounters.current[index] = outOfViewCounters.current[index] || 0;
     });
 
+    // Optimize loop with early distance check
     allImagePositions.forEach((posArray, index) => {
       if (!posArray) return;
 
       tempImageVec.fromArray(posArray);
+
+      // Quick distance check before frustum check for better performance
+      const distanceSq = cameraPosition.distanceToSquared(tempImageVec);
+      const thresholdSq = threshold * threshold;
+
+      if (distanceSq > thresholdSq * 4) { // Early exit for very distant objects
+        if (outOfViewCounters.current[index] !== undefined) {
+          outOfViewCounters.current[index]++;
+        }
+        return;
+      }
 
       if (!frustum.containsPoint(tempImageVec)) {
         if (outOfViewCounters.current[index] !== undefined) {
@@ -120,7 +151,7 @@ const VisibilityUpdater = ({
         return;
       }
 
-      const distance = cameraPosition.distanceTo(tempImageVec);
+      const distance = Math.sqrt(distanceSq); // Only calculate sqrt when needed
 
       if (distance < threshold) {
         newVisibleIndicesSet.add(index);
@@ -199,7 +230,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
-  const VISIBLE_DISTANCE_THRESHOLD = 130;
+  const VISIBLE_DISTANCE_THRESHOLD = 100; // Reduced from 130 for better performance
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.3, [images.length]);
 
@@ -362,13 +393,19 @@ function App() {
   const handleVisibleIndicesChange = useCallback(
     (newIndices) => {
       if (Array.isArray(newIndices)) {
-        setVisibleImageIndices(newIndices);
+        // Use startTransition to mark this as a non-urgent update
+        // This allows React to prioritize camera movement and user interactions
+        startTransition(() => {
+          setVisibleImageIndices(newIndices);
+        });
       } else {
         console.error(
           'handleVisibleIndicesChange received non-array input:',
           newIndices
         );
-        setVisibleImageIndices([]);
+        startTransition(() => {
+          setVisibleImageIndices([]);
+        });
       }
     },
     [setVisibleImageIndices]
@@ -436,30 +473,33 @@ function App() {
           Uploading: {Math.round(uploadProgress)} %
         </div>
       )}
+      <Loader />
       <Canvas
         style={{ background: backgroundColor }}
-        antialias="true"
-        pixelratio={Math.min(1.5, window.devicePixelRatio)}
+        dpr={[1, 1.5]} // Limit pixel ratio for better performance
         frameloop="always"
         gl={{
           powerPreference: 'high-performance',
           alpha: false,
           stencil: false,
           depth: true,
+          antialias: false, // Disable for better performance, can re-enable if needed
+          preserveDrawingBuffer: false,
+          logarithmicDepthBuffer: false, // Disable for better performance
         }}
         performance={{ min: 0.5 }}
+        onCreated={({ gl }) => {
+          // Additional WebGL optimizations
+          gl.setClearColor(backgroundColor);
+          gl.autoClear = true;
+        }}
       >
-        <ambientLight />
+    
         <CustomCamera targetPosition={targetPosition} />
-
-        <Text3DComponent
-          triggerTransition={triggerTransition}
-          sphereRadius={sphereRadius}
-          setIsAuthModalOpen={setIsAuthModalOpen}
-          titleOrbColor={titleOrbColor}
-          textColor={textColor}
-        />
+<CustomEnvironment />
+ 
         <Suspense fallback={<Loader />}>
+          <Bvh firstHitOnly>
           {images.length > 0 &&
             imagesPositions.length > 0 &&
             images.map((image, index) => {
@@ -491,6 +531,7 @@ function App() {
                 />
               );
             })}
+          </Bvh>
           <RaycasterHandler
             images={imagesPositions}
             handleImageClick={handleImageClick}
@@ -507,42 +548,90 @@ function App() {
       <div
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '5em',
-          backgroundColor: 'rgba(255, 255, 255, 0.5)',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+          pointerEvents: 'none',
+        }}
+      >
+        <h1
+          style={{
+            margin: 0,
+            fontSize: '64px',
+            fontFamily: "'Great Vibes', 'Tangerine', cursive",
+            color: textColor,
+            textShadow: '2px 2px 8px rgba(0, 0, 0, 0.7)',
+            letterSpacing: '3px',
+            fontWeight: 400,
+          }}
+        >
+          placeholder
+        </h1>
+      </div>
+      <div
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '0 2em',
-          boxSizing: 'border-box',
+          gap: '10px',
           zIndex: 1000,
         }}
       >
         <button
           onClick={() => triggerTransition('plane')}
           style={{
-            background: 'none',
-            border: 'none',
-            color: textColor,
-            fontSize: '1.5em',
+            width: '50px',
+            height: '50px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          Plane Layout
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" />
+          </svg>
         </button>
         <button
           onClick={() => triggerTransition('sphere')}
           style={{
-            background: 'none',
-            border: 'none',
-            color: textColor,
-            fontSize: '1.5em',
+            width: '50px',
+            height: '50px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
             cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
+            e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          Sphere Layout
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2">
+            <circle cx="12" cy="12" r="9" />
+          </svg>
         </button>
       </div>
     </div>
