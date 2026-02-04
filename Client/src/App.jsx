@@ -92,7 +92,7 @@ const VisibilityUpdater = ({
 
   // Adaptive frame skip: skip more frames when textures are loading
   const getFrameSkipInterval = () => {
-    return textureLoadQueue.isLoading() ? 60 : 30; // Skip more when loading
+    return textureLoadQueue.isLoading() ? 90 : 45; // Increased skip intervals for smoother camera
   };
 
   const frustum = useMemo(() => new THREE.Frustum(), []);
@@ -229,6 +229,7 @@ function App() {
 
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const VISIBLE_DISTANCE_THRESHOLD = 100; // Reduced from 130 for better performance
 
@@ -568,6 +569,158 @@ function App() {
         >
           placeholder
         </h1>
+      </div>
+      {/* Menu Button */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          zIndex: 1000,
+        }}
+      >
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          style={{
+            width: '50px',
+            height: '50px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+          </svg>
+        </button>
+      </div>
+      {/* Menu Panel */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '10rem',
+          left: '6rem',
+          width: '20rem',
+          bottom: '10rem',
+          background: isMenuOpen ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0)',
+          border: isMenuOpen ? `2px solid ${textColor}` : '2px solid transparent',
+          borderRadius: '12px',
+          zIndex: 999,
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '2rem',
+          gap: '1.5rem',
+          transition: 'background 0.4s ease, border 0.4s ease',
+          pointerEvents: isMenuOpen ? 'auto' : 'none',
+        }}
+      >
+        <button
+          style={{
+            padding: '1rem',
+            background: 'rgba(0, 0, 0, 0.9)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
+            color: textColor,
+            fontSize: '16px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            opacity: isMenuOpen ? 1 : 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Menu Item 1
+        </button>
+        <button
+          style={{
+            padding: '1rem',
+            background: 'rgba(0, 0, 0, 0.9)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
+            color: textColor,
+            fontSize: '16px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            opacity: isMenuOpen ? 1 : 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Menu Item 2
+        </button>
+        <button
+          style={{
+            padding: '1rem',
+            background: 'rgba(0, 0, 0, 0.9)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
+            color: textColor,
+            fontSize: '16px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            opacity: isMenuOpen ? 1 : 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Menu Item 3
+        </button>
+        <button
+          style={{
+            padding: '1rem',
+            background: 'rgba(0, 0, 0, 0.9)',
+            border: `2px solid ${textColor}`,
+            borderRadius: '8px',
+            color: textColor,
+            fontSize: '16px',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            opacity: isMenuOpen ? 1 : 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
+            e.currentTarget.style.transform = 'scale(1.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          Menu Item 4
+        </button>
       </div>
       <div
         style={{

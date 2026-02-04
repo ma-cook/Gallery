@@ -2,7 +2,7 @@
 // This helps maintain smooth camera movement during image loading
 
 class TextureLoadQueue {
-  constructor(maxConcurrent = 3) { // Increased from 2 to 3 for better balance
+  constructor(maxConcurrent = 2) { // Limited to 2 for smoother camera movement
     this.maxConcurrent = maxConcurrent;
     this.currentLoading = 0;
     this.queue = [];
@@ -59,4 +59,4 @@ class TextureLoadQueue {
 }
 
 // Global instance with optimized concurrency
-export const textureLoadQueue = new TextureLoadQueue(3);
+export const textureLoadQueue = new TextureLoadQueue(2);

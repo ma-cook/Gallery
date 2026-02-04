@@ -33,8 +33,9 @@ const ImagePlane = forwardRef(
     // Determine highResolution status from the specific image's state in the store
     const highResolution = imageStateForThisIndex?.highResolution === true;
     
-    // Track distance for render culling
-    const [isWithinRenderDistance, setIsWithinRenderDistance] = useState(true);
+    // Track distance for render culling - use ref to avoid re-renders
+    const isWithinRenderDistanceRef = useRef(true);
+    const [, forceUpdate] = useState({});
 
     // Initialize with dimensions reflecting the target screen width AND initial highResolution status
     const [currentRenderDimensions, setCurrentRenderDimensions] = useState(
@@ -97,7 +98,7 @@ const ImagePlane = forwardRef(
 
       if (texture && texture.image) {
         // Defer low-res texture generation to avoid blocking camera movement
-        textureLoadQueue.load(() => createLowResTexture(texture, 0.25, true))
+        textureLoadQueue.load(() => createLowResTexture(texture, 0.2, true), -1)
           .then((generatedLowResTexture) => {
             if (isMounted) {
               if (generatedLowResTexture) {
@@ -129,7 +130,7 @@ const ImagePlane = forwardRef(
 
     const spriteRef = useRef();
     const distanceCheckCounter = useRef(0);
-    const DISTANCE_CHECK_INTERVAL = 10; // Check every 10 frames instead of every frame
+    const DISTANCE_CHECK_INTERVAL = 20; // Check every 20 frames for better performance
 
     useEffect(() => {
       const currentTexture = texture;
@@ -195,10 +196,11 @@ const ImagePlane = forwardRef(
           spriteRef.current.position
         );
         
-        // Check if sprite is within render distance
+        // Check if sprite is within render distance - use ref to avoid state updates
         const withinDistance = distance < MAX_RENDER_DISTANCE;
-        if (withinDistance !== isWithinRenderDistance) {
-          setIsWithinRenderDistance(withinDistance);
+        if (withinDistance !== isWithinRenderDistanceRef.current) {
+          isWithinRenderDistanceRef.current = withinDistance;
+          forceUpdate({}); // Only force update when visibility actually changes
         }
         
         // Always get the absolute latest state from the store for comparison
@@ -259,7 +261,7 @@ const ImagePlane = forwardRef(
     }
 
     // Render sprite invisible if out of range or no texture, but keep component mounted
-    const shouldRenderVisible = materialTexture && isWithinRenderDistance;
+    const shouldRenderVisible = materialTexture && isWithinRenderDistanceRef.current;
 
     return (
       <sprite

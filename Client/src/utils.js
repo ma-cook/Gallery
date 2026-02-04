@@ -43,7 +43,7 @@ const requestIdleCallback = window.requestIdleCallback || ((cb) => {
   }, 1);
 });
 
-export function createLowResTexture(texture, scale = 0.25, defer = false) {
+export function createLowResTexture(texture, scale = 0.2, defer = false) {
   if (!texture || !texture.image) {
     return Promise.resolve(null); // Return a resolved promise with null
   }
