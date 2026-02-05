@@ -8,14 +8,14 @@ import React, {
   useState,
   startTransition,
 } from 'react';
-import { useFrame, Canvas } from '@react-three/fiber';
+import { useFrame, Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Stats, Environment, Bvh } from '@react-three/drei';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import CustomCamera from './components/CustomCamera';
 import AuthModal from './components/AuthModal';
 import Loader from './components/Loader';
-import WhitePlane from './components/WhitePlane';
+
 import {
   fetchImages,
   handleFileChange,
@@ -30,13 +30,14 @@ import {
   calculateSpherePositions,
   calculatePlanePositions,
 } from './utils/layoutFunctions';
-import { handleSignIn } from './utils/authFunctions';
+import { handleSignIn, checkIsAdmin } from './utils/authFunctions';
 
 import OrbLight from './components/OrbLight';
 import SettingsModal from './components/SettingsModal';
 import UIOverlay from './components/UIOverlay';
 import useStore from './store';
 import { textureLoadQueue } from './utils/TextureLoadQueue';
+import { performanceMonitor } from './utils/PerformanceMonitor';
 
 const LazyImagePlane = lazy(() => import('./components/LazyImagePlane'));
 const RaycasterHandler = lazy(() => import('./components/RaycasterHandler'));
@@ -64,7 +65,7 @@ const vector3Pool = new Vector3Pool();
     return (
       <Environment
         background
-        backgroundBlurriness={0.9}
+        backgroundBlurriness={0.02}
         backgroundIntensity={0.08}
         files="/syferfontein_1d_clear_puresky_4k.hdr"
         preset={null}
@@ -81,6 +82,105 @@ function areSortedArraysEqual(a, b) {
   return true;
 }
 
+// Helper component to manage background color via WebGL clear color
+// This allows the environment map to be visible while providing a fallback color
+const BackgroundColor = ({ color }) => {
+  const { gl } = useThree();
+  useEffect(() => {
+    gl.setClearColor(color);
+  }, [gl, color]);
+  return null;
+};
+
+// Memoized Canvas component to prevent re-renders when images change
+const SceneCanvas = React.memo(({ 
+  backgroundColor, 
+  targetPosition, 
+  cameraOffset,
+  images, 
+  imagesPositions, 
+  visibleImageIndicesSet,
+  handleImageClick,
+  handleOrbClick,
+  handleDeleteImage,
+  handleVisibleIndicesChange,
+  user,
+  isAdmin,
+  glowColor,
+  VISIBLE_DISTANCE_THRESHOLD
+}) => {
+  const glConfig = useMemo(() => ({
+    powerPreference: 'high-performance',
+    alpha: false,
+    stencil: false,
+    depth: true,
+    antialias: false,
+    preserveDrawingBuffer: false,
+    logarithmicDepthBuffer: false,
+  }), []);
+
+  return (
+    <Canvas
+      frameloop="always"
+      gl={glConfig}
+      performance={{ min: 0.5 }}
+    >
+      <BackgroundColor color={backgroundColor} />
+      <CustomCamera targetPosition={targetPosition} cameraOffset={cameraOffset} />
+      <CustomEnvironment />
+      <OrbLight glowColor={glowColor} onOrbClick={handleOrbClick} />
+      
+      <Suspense fallback={<Loader />}>
+        <Bvh firstHitOnly>
+          {images.length > 0 &&
+            imagesPositions.length > 0 &&
+            images.map((image, index) => {
+              const position = imagesPositions[index];
+
+              if (!image || !position) {
+                return null;
+              }
+
+              const key = image.id ? `image-${image.id}` : `image-${index}`;
+              const imageUrl = image.url;
+
+              if (!imageUrl) {
+                return null;
+              }
+
+              const isVisible = visibleImageIndicesSet.has(index);
+
+              return (
+                <LazyImagePlane
+                  key={key}
+                  originalIndex={index}
+                  position={position}
+                  onClick={() => handleImageClick(index)}
+                  imageUrl={imageUrl}
+                  user={user}
+                  isAdmin={isAdmin}
+                  onDelete={handleDeleteImage}
+                  isVisible={isVisible}
+                />
+              );
+            })}
+        </Bvh>
+        <RaycasterHandler
+          images={imagesPositions}
+          handleImageClick={handleImageClick}
+        />
+        {images.length > 0 && imagesPositions.length > 0 && (
+          <VisibilityUpdater
+            allImagePositions={imagesPositions}
+            onVisibleIndicesChange={handleVisibleIndicesChange}
+            threshold={VISIBLE_DISTANCE_THRESHOLD}
+          />
+        )}
+      </Suspense>
+    </Canvas>
+  );
+});
+
 const VisibilityUpdater = ({
   allImagePositions,
   onVisibleIndicesChange,
@@ -90,10 +190,25 @@ const VisibilityUpdater = ({
   const lastVisibleIndices = useRef([]);
   const lastUpdateTime = useRef(0);
   const frameSkip = useRef(0);
+  const lastCameraPosition = useRef(new THREE.Vector3());
+  const cameraVelocity = useRef(0);
 
-  // Adaptive frame skip: skip more frames when textures are loading
-  const getFrameSkipInterval = () => {
-    return textureLoadQueue.isLoading() ? 90 : 45; // Increased skip intervals for smoother camera
+  // Experimental: Adaptive frame skip based on camera velocity and texture loading
+  const getFrameSkipInterval = (camera) => {
+    // Calculate camera movement
+    const currentPos = camera.position;
+    const distance = currentPos.distanceTo(lastCameraPosition.current);
+    cameraVelocity.current = distance;
+    lastCameraPosition.current.copy(currentPos);
+    
+    const isMovingFast = cameraVelocity.current > 0.3;
+    const isLoading = textureLoadQueue.isLoading();
+    
+    // Experimental: Drastically reduce visibility checks during fast movement
+    if (isMovingFast && isLoading) return 120; // Skip 120 frames (~2 seconds at 60fps)
+    if (isMovingFast) return 90; // Skip 90 frames when moving fast
+    if (isLoading) return 60; // Skip 60 frames when loading
+    return 30; // Normal skip interval (was 45)
   };
 
   const frustum = useMemo(() => new THREE.Frustum(), []);
@@ -102,8 +217,11 @@ const VisibilityUpdater = ({
   const outOfViewCounters = useRef({});
   const OUT_OF_VIEW_THRESHOLD = 20;
 
-  useFrame(({ camera, clock }) => {
-    const FRAME_SKIP = getFrameSkipInterval();
+  useFrame(({ camera, clock }, delta) => {
+    // Experimental: Record frame performance
+    performanceMonitor.recordFrame(delta);
+    
+    const FRAME_SKIP = getFrameSkipInterval(camera);
     frameSkip.current = (frameSkip.current + 1) % FRAME_SKIP;
     if (frameSkip.current !== 0) return;
 
@@ -211,6 +329,8 @@ function App() {
   );
   const targetPosition = useStore((state) => state.targetPosition);
   const setTargetPosition = useStore((state) => state.setTargetPosition);
+  const cameraOffset = useStore((state) => state.cameraOffset);
+  const setCameraOffset = useStore((state) => state.setCameraOffset);
   const backgroundColor = useStore((state) => state.backgroundColor);
   const setBackgroundColor = useStore((state) => state.setBackgroundColor);
   const glowColor = useStore((state) => state.glowColor);
@@ -229,11 +349,28 @@ function App() {
   );
 
   const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSquareVisible, setIsSquareVisible] = useState(false);
+  const [adaptiveDPR, setAdaptiveDPR] = useState([1, 1.5]); // Experimental: Adaptive pixel ratio
 
-  const VISIBLE_DISTANCE_THRESHOLD = 100; // Reduced from 130 for better performance
+  // Experimental: Monitor performance and adjust quality
+  useEffect(() => {
+    const unsubscribe = performanceMonitor.onQualityChange((quality) => {
+      // Reduce pixel ratio if performance is poor
+      if (quality < 0.8) {
+        setAdaptiveDPR([0.75, 1]);
+      } else if (quality < 0.9) {
+        setAdaptiveDPR([1, 1.25]);
+      } else {
+        setAdaptiveDPR([1, 1.5]);
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  const VISIBLE_DISTANCE_THRESHOLD = 150; // Reduced from 130 for better performance
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.3, [images.length]);
 
@@ -256,8 +393,16 @@ function App() {
   );
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      
+      // Check if user is admin
+      if (currentUser) {
+        const adminStatus = await checkIsAdmin(currentUser);
+        setIsAdmin(adminStatus);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => unsubscribe();
@@ -324,11 +469,27 @@ function App() {
             imagePosition
           );
 
+          setCameraOffset(8); // Normal offset for images
           setTargetPosition(newTargetPosition);
         }
       }
     },
-    [imagesPositions, setTargetPosition]
+    [imagesPositions, setTargetPosition, setCameraOffset]
+  );
+
+  const handleOrbClick = useCallback(
+    (position) => {
+      const now = Date.now();
+      if (now - lastClickTime.current < 100) {
+        return;
+      }
+      lastClickTime.current = now;
+
+      const newTargetPosition = new THREE.Vector3().fromArray(position);
+      setCameraOffset(16); // Twice as far back for orbs
+      setTargetPosition(newTargetPosition);
+    },
+    [setTargetPosition, setCameraOffset]
   );
 
   const handleDeleteImage = useCallback(
@@ -418,6 +579,7 @@ function App() {
     <div style={{ height: '100vh', position: 'relative' }}>
       <UIOverlay
         user={user}
+        isAdmin={isAdmin}
         uploadProgress={uploadProgress}
         textColor={textColor}
         isMenuOpen={isMenuOpen}
@@ -444,77 +606,22 @@ function App() {
         onTextColorChange={setTextColor}
       />
       <Loader />
-      <Canvas
-        style={{ background: backgroundColor }}
-        dpr={[1, 1.5]} // Limit pixel ratio for better performance
-        frameloop="always"
-        gl={{
-          powerPreference: 'high-performance',
-          alpha: false,
-          stencil: false,
-          depth: true,
-          antialias: false, // Disable for better performance, can re-enable if needed
-          preserveDrawingBuffer: false,
-          logarithmicDepthBuffer: false, // Disable for better performance
-        }}
-        performance={{ min: 0.5 }}
-        onCreated={({ gl }) => {
-          // Additional WebGL optimizations
-          gl.setClearColor(backgroundColor);
-          gl.autoClear = true;
-        }}
-      >
-    
-        <CustomCamera targetPosition={targetPosition} />
-<CustomEnvironment />
- 
-        <Suspense fallback={<Loader />}>
-          <Bvh firstHitOnly>
-          {images.length > 0 &&
-            imagesPositions.length > 0 &&
-            images.map((image, index) => {
-              const position = imagesPositions[index];
-
-              if (!image || !position) {
-                return null;
-              }
-
-              const key = image.id ? `image-${image.id}` : `image-${index}`;
-              const imageUrl = image.url;
-
-              if (!imageUrl) {
-                return null;
-              }
-
-              const isVisible = visibleImageIndicesSet.has(index);
-
-              return (
-                <LazyImagePlane
-                  key={key}
-                  originalIndex={index}
-                  position={position}
-                  onClick={() => handleImageClick(index)}
-                  imageUrl={imageUrl}
-                  user={user}
-                  onDelete={handleDeleteImage}
-                  isVisible={isVisible}
-                />
-              );
-            })}
-          </Bvh>
-          <RaycasterHandler
-            images={imagesPositions}
-            handleImageClick={handleImageClick}
-          />
-          {images.length > 0 && imagesPositions.length > 0 && (
-            <VisibilityUpdater
-              allImagePositions={imagesPositions}
-              onVisibleIndicesChange={handleVisibleIndicesChange}
-              threshold={VISIBLE_DISTANCE_THRESHOLD}
-            />
-          )}
-        </Suspense>
-      </Canvas>
+      <SceneCanvas
+        backgroundColor={backgroundColor}
+        targetPosition={targetPosition}
+        cameraOffset={cameraOffset}
+        images={images}
+        imagesPositions={imagesPositions}
+        visibleImageIndicesSet={visibleImageIndicesSet}
+        handleImageClick={handleImageClick}
+        handleOrbClick={handleOrbClick}
+        handleDeleteImage={handleDeleteImage}
+        handleVisibleIndicesChange={handleVisibleIndicesChange}
+        user={user}
+        isAdmin={isAdmin}
+        glowColor={glowColor}
+        VISIBLE_DISTANCE_THRESHOLD={VISIBLE_DISTANCE_THRESHOLD}
+      />
     </div>
   );
 }

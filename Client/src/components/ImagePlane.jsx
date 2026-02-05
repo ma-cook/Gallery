@@ -19,7 +19,7 @@ const textureCache = new Map();
 
 const ImagePlane = forwardRef(
   (
-    { originalIndex, position, onClick, imageUrl, user, onDelete, onError },
+    { originalIndex, position, onClick, imageUrl, user, isAdmin, onDelete, onError },
     ref
   ) => {
     const updateImageComponentState = useStore(
@@ -70,6 +70,17 @@ const ImagePlane = forwardRef(
             loadedTexture.needsUpdate = true;
             setTexture(loadedTexture);
             setIsLoading(false);
+
+            // Start low-res generation immediately in background
+            if (loadedTexture.image && (loadedTexture.image.width > 512 || loadedTexture.image.height > 512)) {
+              setTimeout(() => {
+                createLowResTexture(loadedTexture, 0.2, true).then((lowRes) => {
+                  if (isMounted && lowRes) {
+                    setLowResTexture(lowRes);
+                  }
+                });
+              }, 0);
+            }
           }
         },
         undefined,
@@ -275,7 +286,7 @@ const ImagePlane = forwardRef(
         {shouldRenderVisible && spriteMaterial && (
           <primitive object={spriteMaterial} attach="material" />
         )}
-        {user &&
+        {isAdmin &&
           materialTexture &&
           highResolution &&
           shouldRenderVisible && ( // Only render delete button when close (high res)

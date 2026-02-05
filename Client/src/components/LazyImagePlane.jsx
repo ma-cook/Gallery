@@ -8,6 +8,7 @@ const LazyImagePlane = ({
   onClick,
   imageUrl,
   user,
+  isAdmin,
   onDelete,
   isVisible,
 }) => {
@@ -59,6 +60,7 @@ const LazyImagePlane = ({
         onClick={onClick}
         imageUrl={imageUrl}
         user={user}
+        isAdmin={isAdmin}
         onDelete={onDelete}
         onError={handleError} // This now calls the store action
       />

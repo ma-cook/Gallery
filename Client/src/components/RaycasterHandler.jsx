@@ -1,25 +1,54 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
-import { debounce } from 'lodash';
 
 const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
   const { camera, scene } = useThree();
   const raycaster = useRef(new THREE.Raycaster());
   const mouse = useRef(new THREE.Vector2());
   const [isMoving, setIsMoving] = useState(false);
-  // Use a lighter throttle instead of a full debounce for more responsive movement
-  const handleMouseMove = useCallback(
-    debounce((event) => {
-      mouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
-    }, 33), // 30fps update rate for mouse position
-    []
-  );
+  const rafId = useRef(null);
+  const needsUpdate = useRef(false);
+  const tempMouse = useRef({ x: 0, y: 0 });
+  
+  // Cache objects with userData.originalIndex for faster raycasting
+  const clickableObjects = useRef([]);
+  
+  // Use requestAnimationFrame for smoother, more efficient mouse tracking
+  const handleMouseMove = useCallback((event) => {
+    tempMouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
+    tempMouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+    if (!needsUpdate.current) {
+      needsUpdate.current = true;
+      rafId.current = requestAnimationFrame(() => {
+        mouse.current.x = tempMouse.current.x;
+        mouse.current.y = tempMouse.current.y;
+        needsUpdate.current = false;
+      });
+    }
+  }, []);
 
-  // Use a cache for raycast results
   const lastClickTime = useRef(0);
-  const CLICK_THRESHOLD = 300; // ms between clicks to prevent double clicks
+  const CLICK_THRESHOLD = 250; // ms between clicks to prevent double clicks
+  
+  // Update clickable objects cache when scene changes
+  useEffect(() => {
+    const updateClickableObjects = () => {
+      clickableObjects.current = [];
+      scene.traverse((object) => {
+        if (object.userData && object.userData.originalIndex !== undefined) {
+          clickableObjects.current.push(object);
+        }
+      });
+    };
+    
+    updateClickableObjects();
+    // Re-cache when images change
+    const timer = setTimeout(updateClickableObjects, 100);
+    return () => clearTimeout(timer);
+  }, [scene, imagesPositions]);
+  
   const handleMouseClick = useCallback(
     (event) => {
       // Prevent rapid consecutive clicks
@@ -31,45 +60,47 @@ const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
 
       if (isMoving) return; // Ignore clicks while the camera is moving
 
-      // Use coarse raycast first with large distance
+      // Optimize raycaster settings
       raycaster.current.setFromCamera(mouse.current, camera);
-      raycaster.current.far = 300; // Limit raycasting distance      // Use recursive raycasting to check all children
+      raycaster.current.far = 300; // Limit raycasting distance
+      raycaster.current.firstHitOnly = true; // Stop at first hit for better performance
+      
+      // Use cached clickable objects instead of recursive scene traversal
       const intersects = raycaster.current.intersectObjects(
-        scene.children,
-        true // Use true to check descendants (needed to find nested mesh objects)
+        clickableObjects.current,
+        false // No recursion needed since we already have the objects
       );
 
       if (intersects.length > 0) {
-        // Sort intersects by distance
-        intersects.sort((a, b) => a.distance - b.distance); // Find the closest intersected object that has userData.originalIndex
-        const intersectedObject = intersects.find(
-          (intersect) =>
-            intersect.object.userData &&
-            intersect.object.userData.originalIndex !== undefined
-        );
-
-        if (intersectedObject) {
-          const index = intersectedObject.object.userData.originalIndex;
-          if (index !== undefined) {
-            setIsMoving(true); // Set the flag to true when starting the camera movement
-            handleImageClick(index);
-            event.stopPropagation(); // Stop the event propagation
-
-            // Simulate camera movement completion (replace with actual camera movement logic)
-          }
+        // First intersect is closest due to raycaster sorting
+        const intersectedObject = intersects[0];
+        const index = intersectedObject.object.userData.originalIndex;
+        
+        if (index !== undefined) {
+          setIsMoving(true);
+          handleImageClick(index);
+          event.stopPropagation();
+          
+          // Reset moving state after animation completes (600ms from CustomCamera)
+          setTimeout(() => {
+            setIsMoving(false);
+          }, 650);
         }
       }
     },
-    [camera, handleImageClick, isMoving, scene.children]
+    [camera, handleImageClick, isMoving]
   );
 
   useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mousemove', handleMouseMove, { passive: true });
     window.addEventListener('click', handleMouseClick);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('click', handleMouseClick);
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
     };
   }, [handleMouseMove, handleMouseClick]);
 

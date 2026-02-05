@@ -1,14 +1,30 @@
-import React, { useEffect, useRef, memo, useCallback } from 'react';
+import React, { useEffect, useRef, memo, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useThree, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
+import { textureLoadQueue } from '../utils/TextureLoadQueue';
 
-const CustomCamera = ({ targetPosition }) => {
+const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
   const { camera, gl } = useThree();
   const cameraRef = useRef();
   const controlsRef = useRef();
   const targetRef = useRef(new THREE.Vector3());
   const isMovingRef = useRef(false);
+  
+  // Experimental: Track camera velocity for adaptive performance
+  const lastPosition = useRef(new THREE.Vector3());
+  const velocity = useRef(0);
+  const VELOCITY_THRESHOLD = 0.5; // Threshold for "rapid" movement
+  
+  // Expose isMoving state to parent components
+  useImperativeHandle(ref, () => ({
+    get isMoving() {
+      return isMovingRef.current;
+    },
+    get velocity() {
+      return velocity.current;
+    },
+  }));
 
   const planeWidth = 1200;
   const planeHeight = 1200;
@@ -41,6 +57,18 @@ const CustomCamera = ({ targetPosition }) => {
   const constraintFrameCounter = useRef(0);
 
   useFrame((state) => {
+    // Experimental: Calculate camera velocity
+    const currentPosition = cameraRef.current.position;
+    velocity.current = currentPosition.distanceTo(lastPosition.current);
+    lastPosition.current.copy(currentPosition);
+    
+    // Experimental: Notify texture queue of rapid movement
+    if (velocity.current > VELOCITY_THRESHOLD) {
+      textureLoadQueue.setCameraMoving(true);
+    } else if (velocity.current < VELOCITY_THRESHOLD / 2) {
+      textureLoadQueue.setCameraMoving(false);
+    }
+    
     if (isMovingRef.current) {
       // Initialize animation start time if needed
       if (startTimeRef.current === 0) {
@@ -52,13 +80,12 @@ const CustomCamera = ({ targetPosition }) => {
       const progress = Math.min(elapsedTime / animationDurationRef.current, 1);
       const easeProgress = easeOutCubic(progress); // Smooth easing function
 
-      const offset = 8; // Distance to offset the camera
       directionVector.current
         .subVectors(camera.position, targetRef.current)
         .normalize();
       adjustedPositionVector.current.addVectors(
         targetRef.current,
-        directionVector.current.multiplyScalar(offset)
+        directionVector.current.multiplyScalar(cameraOffset)
       );
 
       // Use easing function for smoother movement
@@ -81,9 +108,9 @@ const CustomCamera = ({ targetPosition }) => {
     // Always look at the target position
     cameraRef.current.lookAt(targetRef.current);
 
-    // Apply constraints with smoothing, but only every few frames for better performance
+    // Apply constraints with smoothing, but only every 3 frames for better performance
     constraintFrameCounter.current++;
-    if (constraintFrameCounter.current % 2 === 0) { // Apply constraints every other frame
+    if (constraintFrameCounter.current % 3 === 0) { // Apply constraints every 3rd frame
       const { x, y, z } = cameraRef.current.position;
       const constrainedX = Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x));
       const constrainedY = Math.max(minYPosition, y);
@@ -135,6 +162,6 @@ const CustomCamera = ({ targetPosition }) => {
       />
     </>
   );
-};
+});
 
 export default memo(CustomCamera);

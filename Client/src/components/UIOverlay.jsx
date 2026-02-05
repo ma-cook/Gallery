@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import AuthModal from './AuthModal';
+import { signOutUser } from '../Auth';
 
 const UIOverlay = ({
   user,
+  isAdmin,
   uploadProgress,
   textColor,
   isMenuOpen,
@@ -34,19 +36,73 @@ const UIOverlay = ({
         multiple
       />
 
-      {/* Top left - Upload and Settings buttons */}
-      <div style={{ position: 'absolute', zIndex: 1 }}>
-        {user && (
+      {/* Top left - Upload and Settings buttons (Admin only) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '37px',
+          left: '40px',
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '8px',
+          zIndex: 1000,
+          alignItems: 'center',
+        }}
+      >
+        {isAdmin && (
           <>
-            <button
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              }}
               onClick={() => document.getElementById('fileInput').click()}
-              disabled={uploadProgress > 0}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
             >
-              Upload Image
-            </button>
-            <button onClick={() => setIsSettingsModalOpen(true)}>
-              Settings
-            </button>
+              upload
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                marginLeft: '40px',
+              }}
+              onClick={() => setIsSettingsModalOpen(true)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              settings
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                marginLeft: '40px',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              requests
+            </span>
           </>
         )}
       </div>
@@ -163,56 +219,79 @@ const UIOverlay = ({
               >
                 Collection
         </span>
-        <span
-          style={{
-            color: textColor,
-            fontSize: '12px',
-            cursor: 'pointer',
-            textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-            marginLeft: '40px',
-          }}
-          onClick={() => {
-            setAuthMode('signin');
-            setIsAuthModalOpen(true);
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.textDecoration = 'underline';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.textDecoration = 'none';
-          }}
-        >
-          sign in
-        </span>
-        <span
-          style={{
-            color: textColor,
-            fontSize: '12px',
-            textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-          }}
-        >
-          |
-        </span>
-        <span
-          style={{
-            color: textColor,
-            fontSize: '12px',
-            cursor: 'pointer',
-            textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-          }}
-          onClick={() => {
-            setAuthMode('createaccount');
-            setIsAuthModalOpen(true);
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.textDecoration = 'underline';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.textDecoration = 'none';
-          }}
-        >
-          create account
-        </span>
+        {user ? (
+          <span
+            style={{
+              color: textColor,
+              fontSize: '12px',
+              cursor: 'pointer',
+              textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              marginLeft: '40px',
+            }}
+            onClick={signOutUser}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+          >
+            sign out
+          </span>
+        ) : (
+          <>
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                marginLeft: '40px',
+              }}
+              onClick={() => {
+                setAuthMode('signin');
+                setIsAuthModalOpen(true);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              sign in
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              |
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              }}
+              onClick={() => {
+                setAuthMode('createaccount');
+                setIsAuthModalOpen(true);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              create account
+            </span>
+          </>
+        )}
       </div>
 
       {/* Layout toggle buttons (top right) */}

@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 export function calculateImageDimensions(image, maxWidth = 100) {
   const imgNaturalWidth = image ? image.naturalWidth : 0;
   const imgNaturalHeight = image ? image.naturalHeight : 0;
