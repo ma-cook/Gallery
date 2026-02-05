@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Text3D } from '@react-three/drei';
-import { handleSignIn, handleSignOut } from './authFunctions';
+import { handleSignIn, handleSignOut } from '../authFunctions';
 import FakeGlowMaterial from './FakeGlowMaterial';
 
 function Text3DComponent({

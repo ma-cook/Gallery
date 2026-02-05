@@ -12,10 +12,10 @@ import { useFrame, Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Stats, Environment, Bvh } from '@react-three/drei';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
-import CustomCamera from './CustomCamera';
-import AuthModal from './AuthModal';
-import Loader from './Loader';
-import WhitePlane from './WhitePlane';
+import CustomCamera from './components/CustomCamera';
+import AuthModal from './components/AuthModal';
+import Loader from './components/Loader';
+import WhitePlane from './components/WhitePlane';
 import {
   fetchImages,
   handleFileChange,
@@ -29,16 +29,17 @@ import {
 import {
   calculateSpherePositions,
   calculatePlanePositions,
-} from './layoutFunctions';
-import { handleSignIn } from './authFunctions';
+} from './utils/layoutFunctions';
+import { handleSignIn } from './utils/authFunctions';
 
-import OrbLight from './OrbLight';
-import SettingsModal from './SettingsModal';
+import OrbLight from './components/OrbLight';
+import SettingsModal from './components/SettingsModal';
+import UIOverlay from './components/UIOverlay';
 import useStore from './store';
-import { textureLoadQueue } from './TextureLoadQueue';
+import { textureLoadQueue } from './utils/TextureLoadQueue';
 
-const LazyImagePlane = lazy(() => import('./LazyImagePlane'));
-const RaycasterHandler = lazy(() => import('./RaycasterHandler'));
+const LazyImagePlane = lazy(() => import('./components/LazyImagePlane'));
+const RaycasterHandler = lazy(() => import('./components/RaycasterHandler'));
 
 const auth = getAuth();
 
@@ -63,8 +64,8 @@ const vector3Pool = new Vector3Pool();
     return (
       <Environment
         background
-        backgroundBlurriness={0.5}
-        backgroundIntensity={0.2}
+        backgroundBlurriness={0.9}
+        backgroundIntensity={0.08}
         files="/syferfontein_1d_clear_puresky_4k.hdr"
         preset={null}
       />
@@ -230,6 +231,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSquareVisible, setIsSquareVisible] = useState(false);
 
   const VISIBLE_DISTANCE_THRESHOLD = 100; // Reduced from 130 for better performance
 
@@ -414,34 +416,20 @@ function App() {
 
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
-      <input
-        type="file"
-        id="fileInput"
-        style={{ display: 'none' }}
-        onChange={(event) =>
-          handleFileChangeWithProgress(event, user, setImages)
-        }
-        accept="image/*"
-        multiple
-      />
-      <div style={{ position: 'absolute', zIndex: 1 }}>
-        {user && (
-          <>
-            <button
-              onClick={() => document.getElementById('fileInput').click()}
-              disabled={uploadProgress > 0}
-            >
-              Upload Image
-            </button>
-            <button onClick={() => setIsSettingsModalOpen(true)}>
-              Settings
-            </button>
-          </>
-        )}
-      </div>
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+      <UIOverlay
+        user={user}
+        uploadProgress={uploadProgress}
+        textColor={textColor}
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+        isSquareVisible={isSquareVisible}
+        setIsSquareVisible={setIsSquareVisible}
+        triggerTransition={triggerTransition}
+        handleFileChangeWithProgress={handleFileChangeWithProgress}
+        setIsSettingsModalOpen={setIsSettingsModalOpen}
+        setImages={setImages}
+        isAuthModalOpen={isAuthModalOpen}
+        setIsAuthModalOpen={setIsAuthModalOpen}
         onSignIn={(email, password) =>
           handleSignIn(email, password, setIsAuthModalOpen)
         }
@@ -455,25 +443,6 @@ function App() {
         onTitleOrbChange={setTitleOrbColor}
         onTextColorChange={setTextColor}
       />
-      {uploadProgress > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            color: textColor,
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            padding: '15px 25px',
-            borderRadius: '8px',
-            fontSize: '1.2em',
-            zIndex: 1000,
-            textAlign: 'center',
-          }}
-        >
-          Uploading: {Math.round(uploadProgress)} %
-        </div>
-      )}
       <Loader />
       <Canvas
         style={{ background: backgroundColor }}
@@ -546,247 +515,6 @@ function App() {
           )}
         </Suspense>
       </Canvas>
-      <div
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 1000,
-          pointerEvents: 'none',
-        }}
-      >
-        <h1
-          style={{
-            margin: 0,
-            fontSize: '64px',
-            fontFamily: "'Great Vibes', 'Tangerine', cursive",
-            color: textColor,
-            textShadow: '2px 2px 8px rgba(0, 0, 0, 0.7)',
-            letterSpacing: '3px',
-            fontWeight: 400,
-          }}
-        >
-          placeholder
-        </h1>
-      </div>
-      {/* Menu Button */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '20px',
-          left: '20px',
-          zIndex: 1000,
-        }}
-      >
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          style={{
-            width: '50px',
-            height: '50px',
-            background: 'rgba(0, 0, 0, 0.6)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
-            e.currentTarget.style.transform = 'scale(1.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2">
-            <line x1="3" y1="6" x2="21" y2="6" />
-            <line x1="3" y1="12" x2="21" y2="12" />
-            <line x1="3" y1="18" x2="21" y2="18" />
-          </svg>
-        </button>
-      </div>
-      {/* Menu Panel */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '10rem',
-          left: '6rem',
-          width: '20rem',
-          bottom: '10rem',
-          background: isMenuOpen ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0)',
-          border: isMenuOpen ? `2px solid ${textColor}` : '2px solid transparent',
-          borderRadius: '12px',
-          zIndex: 999,
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '2rem',
-          gap: '1.5rem',
-          transition: 'background 0.4s ease, border 0.4s ease',
-          pointerEvents: isMenuOpen ? 'auto' : 'none',
-        }}
-      >
-        <button
-          style={{
-            padding: '1rem',
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            color: textColor,
-            fontSize: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            opacity: isMenuOpen ? 1 : 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          Menu Item 1
-        </button>
-        <button
-          style={{
-            padding: '1rem',
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            color: textColor,
-            fontSize: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            opacity: isMenuOpen ? 1 : 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          Menu Item 2
-        </button>
-        <button
-          style={{
-            padding: '1rem',
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            color: textColor,
-            fontSize: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            opacity: isMenuOpen ? 1 : 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          Menu Item 3
-        </button>
-        <button
-          style={{
-            padding: '1rem',
-            background: 'rgba(0, 0, 0, 0.9)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            color: textColor,
-            fontSize: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.3s ease',
-            opacity: isMenuOpen ? 1 : 0,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(50, 50, 50, 0.9)';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.9)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          Menu Item 4
-        </button>
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          display: 'flex',
-          gap: '10px',
-          zIndex: 1000,
-        }}
-      >
-        <button
-          onClick={() => triggerTransition('plane')}
-          style={{
-            width: '50px',
-            height: '50px',
-            background: 'rgba(0, 0, 0, 0.6)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
-            e.currentTarget.style.transform = 'scale(1.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2">
-            <rect x="3" y="3" width="18" height="18" />
-          </svg>
-        </button>
-        <button
-          onClick={() => triggerTransition('sphere')}
-          style={{
-            width: '50px',
-            height: '50px',
-            background: 'rgba(0, 0, 0, 0.6)',
-            border: `2px solid ${textColor}`,
-            borderRadius: '8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)';
-            e.currentTarget.style.transform = 'scale(1.1)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2">
-            <circle cx="12" cy="12" r="9" />
-          </svg>
-        </button>
-      </div>
     </div>
   );
 }

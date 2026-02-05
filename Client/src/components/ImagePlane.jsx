@@ -3,10 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
 import DeleteButton from './DeleteButton';
-import useStore from './store';
-import { createLowResTexture } from './utils';
-import { textureLoadQueue } from './TextureLoadQueue';
-import { RoundedSpriteMaterial } from './RoundedSpriteMaterial';
+import useStore from '../store';
+import { createLowResTexture } from '../utils/utils';
+import { textureLoadQueue } from '../utils/TextureLoadQueue';
+import { RoundedSpriteMaterial } from '../utils/RoundedSpriteMaterial';
 
 // Distance threshold for switching to low-resolution textures
 const DISTANCE_THRESHOLD = 60;

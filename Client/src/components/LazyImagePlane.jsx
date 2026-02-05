@@ -1,6 +1,6 @@
 import React, { useEffect, Suspense, useRef } from 'react'; // Removed useState
 import ImagePlane from './ImagePlane';
-import useStore from './store'; // Added
+import useStore from '../store'; // Added
 
 const LazyImagePlane = ({
   originalIndex,

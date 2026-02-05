@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
-import useStore from './store';
+import useStore from '../store';
 import {
   saveOrbColor,
   saveTitleOrbColor,
   saveTextColor,
-} from './firebaseFunctions';
+} from '../firebaseFunctions';
 
 function SettingsModal({
   isOpen,
