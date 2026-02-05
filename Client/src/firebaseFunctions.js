@@ -7,6 +7,12 @@ import {
   doc,
   setDoc,
   getDoc,
+  updateDoc,
+  query,
+  orderBy,
+  where,
+  serverTimestamp,
+  collectionGroup,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -145,5 +151,141 @@ export const fetchTextColor = async () => {
     return docSnap.data().textColor;
   } else {
     return '#fff4d2'; // default color
+  }
+};
+
+export const saveTitleColor = async (titleColor) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'titleColor'), {
+    titleColor: titleColor,
+  });
+};
+
+export const fetchTitleColor = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'titleColor');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().titleColor;
+  } else {
+    return '#fff4d2'; // default color
+  }
+};
+
+export const saveButtonPrimaryColor = async (buttonPrimaryColor) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'buttonPrimaryColor'), {
+    buttonPrimaryColor: buttonPrimaryColor,
+  });
+};
+
+export const fetchButtonPrimaryColor = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'buttonPrimaryColor');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().buttonPrimaryColor;
+  } else {
+    return '#fff4d2'; // default color
+  }
+};
+
+export const saveButtonSecondaryColor = async (buttonSecondaryColor) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'buttonSecondaryColor'), {
+    buttonSecondaryColor: buttonSecondaryColor,
+  });
+};
+
+export const fetchButtonSecondaryColor = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'buttonSecondaryColor');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().buttonSecondaryColor;
+  } else {
+    return 'rgba(0, 0, 0, 0.6)'; // default color
+  }
+};
+
+// Request functions
+export const createRequest = async (requestData) => {
+  try {
+    if (!requestData.userId) {
+      throw new Error('User ID is required to create a request');
+    }
+    const docRef = await addDoc(
+      collection(db, 'users', requestData.userId, 'requests'),
+      {
+        ...requestData,
+        status: 'open',
+        createdAt: serverTimestamp(),
+      }
+    );
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating request:', error);
+    throw error;
+  }
+};
+
+export const fetchRequests = async () => {
+  try {
+    // Use collectionGroup to fetch all requests from all users
+    const q = query(collectionGroup(db, 'requests'));
+    const querySnapshot = await getDocs(q);
+    const requests = querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      userId: doc.ref.parent.parent.id, // Get userId from parent path
+      ...doc.data(),
+    }));
+    // Sort by createdAt client-side to avoid needing a collection group index
+    return requests.sort((a, b) => {
+      if (!a.createdAt) return 1;
+      if (!b.createdAt) return -1;
+      return b.createdAt.seconds - a.createdAt.seconds;
+    });
+  } catch (error) {
+    console.error('Error fetching requests:', error);
+    throw error;
+  }
+};
+
+export const updateRequestStatus = async (userId, requestId, status) => {
+  try {
+    const requestRef = doc(db, 'users', userId, 'requests', requestId);
+    await updateDoc(requestRef, { status });
+  } catch (error) {
+    console.error('Error updating request status:', error);
+    throw error;
+  }
+};
+
+export const fetchUserRequests = async (userId) => {
+  try {
+    const q = query(
+      collection(db, 'users', userId, 'requests'),
+      orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+  } catch (error) {
+    console.error('Error fetching user requests:', error);
+    throw error;
+  }
+};
+
+export const checkUserHasRequests = async (userId) => {
+  try {
+    if (!userId) return false;
+    const q = query(collection(db, 'users', userId, 'requests'));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  } catch (error) {
+    console.error('Error checking user requests:', error);
+    return false;
   }
 };

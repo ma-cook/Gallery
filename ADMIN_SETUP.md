@@ -20,11 +20,13 @@ Unfortunately, Firebase Console doesn't support setting custom claims directly. 
 
 Create a Node.js script to set admin privileges:
 
-1. **Install Firebase Admin SDK** (in a separate admin folder or project):
+1. **Install Firebase Admin SDK** (only needed for admin scripts, not for the client):
 
 ```bash
 npm install firebase-admin
 ```
+
+**Note:** firebase-admin is a server-side SDK and should NOT be in your client dependencies. Only install it when you need to run admin scripts.
 
 2. **Get your Firebase Admin Service Account Key**:
    - Go to [Firebase Console](https://console.firebase.google.com/)

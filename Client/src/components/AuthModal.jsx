@@ -35,24 +35,24 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '24rem',
+        width: '22rem',
         maxWidth: '90vw',
-        background: 'rgba(255, 255, 255, 0.95)',
-        border: '1px solid rgba(0, 0, 0, 0.2)',
-        borderRadius: '8px',
-        padding: '1.75rem',
+        background: 'rgba(255, 255, 255, 0.97)',
+        border: '1px solid rgba(0, 0, 0, 0.15)',
+        borderRadius: '4px',
+        padding: '1.5rem',
         zIndex: 1000,
-        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2
           style={{
             margin: 0,
-            color: '#000',
-            fontSize: '20px',
+            color: '#1a1a1a',
+            fontSize: '18px',
             fontWeight: 600,
-            letterSpacing: '-0.02em',
+            letterSpacing: '-0.3px',
           }}
         >
           {title}
@@ -84,9 +84,9 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
         </button>
       </div>
       
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          <label style={{ color: '#333', fontSize: '13px', fontWeight: 500 }}>Email</label>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <label style={{ color: '#555', fontSize: '12px', fontWeight: 600 }}>Email</label>
           <input
             type="email"
             value={email}
@@ -94,12 +94,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
             required
             placeholder="you@example.com"
             style={{
-              padding: '0.6rem 0.75rem',
+              padding: '0.55rem 0.7rem',
               background: '#fff',
               border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '6px',
+              borderRadius: '3px',
               color: '#000',
-              fontSize: '14px',
+              fontSize: '13px',
               outline: 'none',
               transition: 'border-color 0.2s ease',
             }}
@@ -111,8 +111,8 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
             }}
           />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          <label style={{ color: '#333', fontSize: '13px', fontWeight: 500 }}>Password</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <label style={{ color: '#555', fontSize: '12px', fontWeight: 600 }}>Password</label>
           <input
             type="password"
             value={password}
@@ -120,12 +120,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
             required
             placeholder="••••••••"
             style={{
-              padding: '0.6rem 0.75rem',
+              padding: '0.55rem 0.7rem',
               background: '#fff',
               border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '6px',
+              borderRadius: '3px',
               color: '#000',
-              fontSize: '14px',
+              fontSize: '13px',
               outline: 'none',
               transition: 'border-color 0.2s ease',
             }}
@@ -142,16 +142,16 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
           type="submit"
           style={{
             width: '100%',
-            padding: '0.65rem',
+            padding: '0.6rem',
             background: '#000',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: '3px',
             color: '#fff',
-            fontSize: '14px',
-            fontWeight: 500,
+            fontSize: '13px',
+            fontWeight: 600,
             cursor: 'pointer',
             transition: 'background 0.2s ease',
-            marginTop: '0.5rem',
+            marginTop: '0.4rem',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = '#333';
@@ -168,10 +168,10 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
         display: 'flex', 
         alignItems: 'center', 
         gap: '0.75rem', 
-        margin: '1.25rem 0 1rem',
+        margin: '1rem 0 0.85rem',
       }}>
         <div style={{ flex: 1, height: '1px', background: 'rgba(0, 0, 0, 0.15)' }} />
-        <span style={{ color: '#666', fontSize: '12px', fontWeight: 500 }}>OR</span>
+        <span style={{ color: '#666', fontSize: '11px', fontWeight: 600 }}>OR</span>
         <div style={{ flex: 1, height: '1px', background: 'rgba(0, 0, 0, 0.15)' }} />
       </div>
 
@@ -180,13 +180,13 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
         type="button"
         style={{
           width: '100%',
-          padding: '0.65rem',
+          padding: '0.6rem',
           background: '#fff',
           border: '1px solid rgba(0, 0, 0, 0.2)',
-          borderRadius: '6px',
+          borderRadius: '3px',
           color: '#000',
-          fontSize: '14px',
-          fontWeight: 500,
+          fontSize: '13px',
+          fontWeight: 600,
           cursor: 'pointer',
           transition: 'all 0.2s ease',
           display: 'flex',

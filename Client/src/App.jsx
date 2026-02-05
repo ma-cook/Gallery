@@ -25,6 +25,9 @@ import {
   fetchOrbColor,
   fetchTitleOrbColor,
   fetchTextColor,
+  fetchTitleColor,
+  fetchButtonPrimaryColor,
+  fetchButtonSecondaryColor,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
@@ -341,6 +344,12 @@ function App() {
   const setTitleOrbColor = useStore((state) => state.setTitleOrbColor);
   const textColor = useStore((state) => state.textColor);
   const setTextColor = useStore((state) => state.setTextColor);
+  const titleColor = useStore((state) => state.titleColor);
+  const setTitleColor = useStore((state) => state.setTitleColor);
+  const buttonPrimaryColor = useStore((state) => state.buttonPrimaryColor);
+  const setButtonPrimaryColor = useStore((state) => state.setButtonPrimaryColor);
+  const buttonSecondaryColor = useStore((state) => state.buttonSecondaryColor);
+  const setButtonSecondaryColor = useStore((state) => state.setButtonSecondaryColor);
   const uploadProgress = useStore((state) => state.uploadProgress);
   const setUploadProgress = useStore((state) => state.setUploadProgress);
   const visibleImageIndices = useStore((state) => state.visibleImageIndices);
@@ -416,18 +425,27 @@ function App() {
         glowColorData,
         titleOrbColorData,
         textColorData,
+        titleColorData,
+        buttonPrimaryColorData,
+        buttonSecondaryColorData,
       ] = await Promise.all([
         fetchImages(),
         fetchColor(),
         fetchOrbColor(),
         fetchTitleOrbColor(),
         fetchTextColor(),
+        fetchTitleColor(),
+        fetchButtonPrimaryColor(),
+        fetchButtonSecondaryColor(),
       ]);
       setImages(imagesData);
       setBackgroundColor(backgroundColorData);
       setGlowColor(glowColorData);
       setTitleOrbColor(titleOrbColorData);
       setTextColor(textColorData);
+      setTitleColor(titleColorData);
+      setButtonPrimaryColor(buttonPrimaryColorData);
+      setButtonSecondaryColor(buttonSecondaryColorData);
     };
 
     fetchData();
@@ -582,6 +600,9 @@ function App() {
         isAdmin={isAdmin}
         uploadProgress={uploadProgress}
         textColor={textColor}
+        titleColor={titleColor}
+        buttonPrimaryColor={buttonPrimaryColor}
+        buttonSecondaryColor={buttonSecondaryColor}
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
         isSquareVisible={isSquareVisible}
@@ -599,11 +620,11 @@ function App() {
       <SettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
-        onColorChange={handleColorChange}
         onGlowColorChange={setGlowColor}
-        onLightColorChange={setLightColor}
-        onTitleOrbChange={setTitleOrbColor}
         onTextColorChange={setTextColor}
+        onTitleColorChange={setTitleColor}
+        onButtonPrimaryColorChange={setButtonPrimaryColor}
+        onButtonSecondaryColorChange={setButtonSecondaryColor}
       />
       <Loader />
       <SceneCanvas

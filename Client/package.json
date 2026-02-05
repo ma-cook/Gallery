@@ -14,7 +14,6 @@
     "@react-three/fiber": "^8.15.3",
     "@react-three/postprocessing": "^2.16.2",
     "firebase": "^10.12.3",
-    "firebase-admin": "^13.6.1",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
