@@ -289,3 +289,42 @@ export const checkUserHasRequests = async (userId) => {
     return false;
   }
 };
+
+// Upload completed request image to collection
+export const uploadCompletedRequestImage = async (userId, requestId, file, requestData) => {
+  try {
+    const storage = getStorage();
+    const timestamp = Date.now();
+    const storageRef = ref(storage, `collection/${userId}/${timestamp}_${file.name}`);
+    
+    // Upload the file
+    const uploadTask = await uploadBytesResumable(storageRef, file);
+    const downloadURL = await getDownloadURL(uploadTask.ref);
+    
+    // Create the collection document
+    const collectionDoc = {
+      url: downloadURL,
+      name: file.name,
+      uploadedAt: serverTimestamp(),
+      requestId: requestId,
+      requestName: requestData.name || '',
+      requestDescription: requestData.description || '',
+    };
+    
+    // Add to users/{userId}/collection
+    await addDoc(collection(db, 'users', userId, 'collection'), collectionDoc);
+    
+    // Update request status to completed and add the image URL
+    const requestRef = doc(db, 'users', userId, 'requests', requestId);
+    await updateDoc(requestRef, { 
+      status: 'completed',
+      completedImageUrl: downloadURL,
+      completedAt: serverTimestamp()
+    });
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading completed request image:', error);
+    throw error;
+  }
+};

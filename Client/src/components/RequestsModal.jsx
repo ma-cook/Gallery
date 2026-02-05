@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { fetchRequests, updateRequestStatus } from '../firebaseFunctions';
+import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage } from '../firebaseFunctions';
 
 const RequestsModal = ({ isOpen, onClose }) => {
   const [requests, setRequests] = useState([]);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploadedImages, setUploadedImages] = useState({});
+  const [fullImageView, setFullImageView] = useState(null);
+  const [uploading, setUploading] = useState({});
 
   useEffect(() => {
     if (isOpen) {
@@ -38,6 +41,43 @@ const RequestsModal = ({ isOpen, onClose }) => {
 
   const toggleExpand = (requestId) => {
     setExpandedRequestId(expandedRequestId === requestId ? null : requestId);
+  };
+
+  const handleImageSelect = (requestId, event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Create a preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setUploadedImages(prev => ({
+        ...prev,
+        [requestId]: { file, previewUrl }
+      }));
+    }
+  };
+
+  const handleMarkCompleted = async (userId, requestId, request) => {
+    const imageData = uploadedImages[requestId];
+    if (!imageData || !imageData.file) return;
+
+    setUploading(prev => ({ ...prev, [requestId]: true }));
+    try {
+      await uploadCompletedRequestImage(userId, requestId, imageData.file, request);
+      // Update local state
+      setRequests(requests.map(req => 
+        req.id === requestId ? { ...req, status: 'completed' } : req
+      ));
+      // Clear uploaded image from state
+      setUploadedImages(prev => {
+        const newState = { ...prev };
+        delete newState[requestId];
+        return newState;
+      });
+    } catch (error) {
+      console.error('Error marking as completed:', error);
+      alert('Failed to upload image and mark as completed. Please try again.');
+    } finally {
+      setUploading(prev => ({ ...prev, [requestId]: false }));
+    }
   };
 
   if (!isOpen) return null;
@@ -210,9 +250,123 @@ const RequestsModal = ({ isOpen, onClose }) => {
                       >
                         <option value="open">Open</option>
                         <option value="in progress">In Progress</option>
-                        <option value="completed">Completed</option>
                         <option value="closed">Closed</option>
                       </select>
+                    </div>
+
+                    <div style={{ marginTop: '1rem' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Upload Completed Artwork
+                      </label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id={`file-${request.id}`}
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleImageSelect(request.id, e)}
+                      />
+                      {uploadedImages[request.id] ? (
+                        <div style={{ marginTop: '0.5rem' }}>
+                          <div
+                            style={{
+                              position: 'relative',
+                              width: '120px',
+                              height: '120px',
+                              border: '1px solid rgba(0, 0, 0, 0.2)',
+                              borderRadius: '3px',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                            }}
+                            onClick={() => setFullImageView(uploadedImages[request.id].previewUrl)}
+                          >
+                            <img
+                              src={uploadedImages[request.id].previewUrl}
+                              alt="Preview"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                          </div>
+                          <button
+                            onClick={() => {
+                              setUploadedImages(prev => {
+                                const newState = { ...prev };
+                                delete newState[request.id];
+                                return newState;
+                              });
+                            }}
+                            style={{
+                              marginTop: '0.5rem',
+                              padding: '0.4rem 0.8rem',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              color: '#666',
+                              background: 'transparent',
+                              border: '1px solid rgba(0, 0, 0, 0.2)',
+                              borderRadius: '3px',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Remove Image
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => document.getElementById(`file-${request.id}`).click()}
+                          style={{
+                            padding: '0.5rem 1rem',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: '#1a1a1a',
+                            background: '#fff',
+                            border: '1px solid rgba(0, 0, 0, 0.2)',
+                            borderRadius: '3px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#f8f8f8';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#fff';
+                          }}
+                        >
+                          Choose Image
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: '1rem' }}>
+                      <button
+                        onClick={() => handleMarkCompleted(request.userId, request.id, request)}
+                        disabled={!uploadedImages[request.id] || uploading[request.id]}
+                        style={{
+                          width: '100%',
+                          padding: '0.6rem 1rem',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: uploadedImages[request.id] && !uploading[request.id] ? '#fff' : '#999',
+                          background: uploadedImages[request.id] && !uploading[request.id] ? '#388e3c' : '#e0e0e0',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: uploadedImages[request.id] && !uploading[request.id] ? 'pointer' : 'not-allowed',
+                          transition: 'all 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          if (uploadedImages[request.id] && !uploading[request.id]) {
+                            e.currentTarget.style.background = '#2e7d32';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (uploadedImages[request.id] && !uploading[request.id]) {
+                            e.currentTarget.style.background = '#388e3c';
+                          }
+                        }}
+                      >
+                        {uploading[request.id] ? 'Uploading...' : 'Mark as Completed'}
+                      </button>
                     </div>
                   </div>
                 )}
@@ -221,6 +375,54 @@ const RequestsModal = ({ isOpen, onClose }) => {
           </div>
         )}
       </div>
+
+      {/* Full Image Modal */}
+      {fullImageView && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.9)',
+            zIndex: 1002,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+          }}
+          onClick={() => setFullImageView(null)}
+        >
+          <img
+            src={fullImageView}
+            alt="Full view"
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              objectFit: 'contain',
+            }}
+          />
+          <button
+            onClick={() => setFullImageView(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255, 255, 255, 0.9)',
+              border: 'none',
+              fontSize: '32px',
+              cursor: 'pointer',
+              color: '#000',
+              lineHeight: 1,
+              padding: '0.5rem 0.75rem',
+              borderRadius: '3px',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 };

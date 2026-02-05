@@ -36,5 +36,19 @@ service cloud.firestore {
       // Only admins can delete requests
       allow delete: if request.auth != null && request.auth.token.admin == true;
     }
+    
+    // Collection subcollection for completed artwork
+    match /users/{userId}/collection/{collectionId} {
+      // Users can read their own collection, admins can read all
+      allow read: if request.auth != null && 
+                     (request.auth.token.admin == true || 
+                      userId == request.auth.uid);
+      
+      // Only admins can create/update collection items
+      allow create, update: if request.auth != null && request.auth.token.admin == true;
+      
+      // Only admins can delete collection items
+      allow delete: if request.auth != null && request.auth.token.admin == true;
+    }
   }
 }

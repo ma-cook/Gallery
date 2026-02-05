@@ -5,6 +5,7 @@ const UserRequestsModal = ({ isOpen, onClose, userId }) => {
   const [requests, setRequests] = useState([]);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fullImageView, setFullImageView] = useState(null);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -186,6 +187,57 @@ const UserRequestsModal = ({ isOpen, onClose, userId }) => {
                         {request.createdAt ? new Date(request.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
                       </p>
                     </div>
+
+                    {request.completedImageUrl && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Completed Artwork Preview
+                        </label>
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '120px',
+                            height: '120px',
+                            border: '1px solid rgba(0, 0, 0, 0.2)',
+                            borderRadius: '3px',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setFullImageView(request.completedImageUrl)}
+                        >
+                          <img
+                            src={request.completedImageUrl}
+                            alt="Completed artwork preview"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              filter: 'blur(8px)',
+                            }}
+                          />
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              background: 'rgba(0, 0, 0, 0.7)',
+                              color: '#fff',
+                              padding: '0.5rem 0.75rem',
+                              borderRadius: '3px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              pointerEvents: 'none',
+                            }}
+                          >
+                            Click to view
+                          </div>
+                        </div>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                          Your artwork is ready! Click to preview.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -193,6 +245,76 @@ const UserRequestsModal = ({ isOpen, onClose, userId }) => {
           </div>
         )}
       </div>
+
+      {/* Full Image Modal */}
+      {fullImageView && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.9)',
+            zIndex: 1002,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+          }}
+          onClick={() => setFullImageView(null)}
+        >
+          <img
+            src={fullImageView}
+            alt="Full view"
+            style={{
+              maxWidth: '90%',
+              maxHeight: '90%',
+              objectFit: 'contain',
+              filter: 'blur(10px)',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              background: 'rgba(0, 0, 0, 0.8)',
+              color: '#fff',
+              padding: '1.5rem 2rem',
+              borderRadius: '4px',
+              fontSize: '14px',
+              fontWeight: 600,
+              pointerEvents: 'none',
+              textAlign: 'center',
+            }}
+          >
+            Preview Only<br />
+            <span style={{ fontSize: '12px', fontWeight: 400, opacity: 0.9 }}>
+              Full resolution available on request
+            </span>
+          </div>
+          <button
+            onClick={() => setFullImageView(null)}
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              background: 'rgba(255, 255, 255, 0.9)',
+              border: 'none',
+              fontSize: '32px',
+              cursor: 'pointer',
+              color: '#000',
+              lineHeight: 1,
+              padding: '0.5rem 0.75rem',
+              borderRadius: '3px',
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
     </div>
   );
 };
