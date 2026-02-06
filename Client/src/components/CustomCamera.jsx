@@ -2,7 +2,7 @@ import React, { useEffect, useRef, memo, useCallback, useImperativeHandle, forwa
 import { useThree, useFrame } from '@react-three/fiber';
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
-import { textureLoadQueue } from '../utils/TextureLoadQueue';
+import { textureLoadQueue, thumbnailLoadQueue } from '../utils/TextureLoadQueue';
 
 const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
   const { camera, gl } = useThree();
@@ -11,10 +11,14 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
   const targetRef = useRef(new THREE.Vector3());
   const isMovingRef = useRef(false);
   
-  // Experimental: Track camera velocity for adaptive performance
+  // Track camera velocity for adaptive performance
   const lastPosition = useRef(new THREE.Vector3());
   const velocity = useRef(0);
   const VELOCITY_THRESHOLD = 0.5; // Threshold for "rapid" movement
+  const movingFrameCount = useRef(0);
+  const MOVING_FRAME_THRESHOLD = 3; // Require 3 consecutive frames above threshold
+  const stoppedFrameCount = useRef(0);
+  const STOPPED_FRAME_THRESHOLD = 10; // Require 10 consecutive frames below threshold
   
   // Expose isMoving state to parent components
   useImperativeHandle(ref, () => ({
@@ -57,16 +61,37 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
   const constraintFrameCounter = useRef(0);
 
   useFrame((state) => {
-    // Experimental: Calculate camera velocity
+    // Calculate camera velocity
     const currentPosition = cameraRef.current.position;
     velocity.current = currentPosition.distanceTo(lastPosition.current);
     lastPosition.current.copy(currentPosition);
     
-    // Experimental: Notify texture queue of rapid movement
-    if (velocity.current > VELOCITY_THRESHOLD) {
+    // Debounced camera movement detection to avoid false positives
+    // Require sustained movement or click animation
+    if (isMovingRef.current) {
+      // During click animation, always consider as moving
       textureLoadQueue.setCameraMoving(true);
-    } else if (velocity.current < VELOCITY_THRESHOLD / 2) {
-      textureLoadQueue.setCameraMoving(false);
+      thumbnailLoadQueue.setCameraMoving(true);
+      movingFrameCount.current = MOVING_FRAME_THRESHOLD;
+      stoppedFrameCount.current = 0;
+    } else if (velocity.current > VELOCITY_THRESHOLD) {
+      // Camera is moving fast
+      movingFrameCount.current++;
+      stoppedFrameCount.current = 0;
+      
+      if (movingFrameCount.current >= MOVING_FRAME_THRESHOLD) {
+        textureLoadQueue.setCameraMoving(true);
+        thumbnailLoadQueue.setCameraMoving(true);
+      }
+    } else {
+      // Camera is slow or stopped
+      movingFrameCount.current = 0;
+      stoppedFrameCount.current++;
+      
+      if (stoppedFrameCount.current >= STOPPED_FRAME_THRESHOLD) {
+        textureLoadQueue.setCameraMoving(false);
+        thumbnailLoadQueue.setCameraMoving(false);
+      }
     }
     
     if (isMovingRef.current) {

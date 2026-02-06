@@ -20,3 +20,6 @@ export const db = getFirestore(app);
 
 // Initialize Storage and export
 export const storage = getStorage(app);
+
+// Export app for other services (like Functions)
+export default app;

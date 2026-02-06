@@ -52,7 +52,7 @@ const useStore = create((set) => ({
               boxDimensions: [1, 1],
               hasLoaded: false,
               hasError: false,
-              highResolution: false, // Start with low resolution until distance is checked
+              qualityLevel: 'thumbnail', // Start with thumbnail quality until distance is checked
             },
           },
         };
@@ -69,7 +69,7 @@ const useStore = create((set) => ({
         boxDimensions: [1, 1],
         hasLoaded: false,
         hasError: false,
-        highResolution: false,
+        qualityLevel: 'thumbnail',
       };
       return {
         imageComponentStates: {

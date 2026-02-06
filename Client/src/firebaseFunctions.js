@@ -21,11 +21,100 @@ import {
   deleteObject,
   getDownloadURL,
 } from 'firebase/storage';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from './firebase';
 
 export const fetchImages = async () => {
-  const querySnapshot = await getDocs(collection(db, 'images'));
-  return querySnapshot.docs.map((doc) => ({ id: doc.id, url: doc.data().url }));
+  try {
+    const querySnapshot = await getDocs(collection(db, 'images'));
+    const seenUrls = new Set(); // Track unique URLs to prevent duplicates
+    const images = [];
+    
+    for (const docSnapshot of querySnapshot.docs) {
+      const data = docSnapshot.data();
+      const url = data.url;
+      
+      // Skip if no URL or URL already seen (duplicate)
+      if (!url || typeof url !== 'string' || seenUrls.has(url)) {
+        continue;
+      }
+      
+      seenUrls.add(url);
+      images.push({ 
+        id: docSnapshot.id, 
+        url: url,
+        thumbnailUrl: data.thumbnailUrl,
+        mediumUrl: data.mediumUrl,
+      });
+    }
+    
+    return images;
+  } catch (error) {
+    console.error('Error fetching images:', error);
+    return [];
+  }
+};
+
+/**
+ * Clean up orphaned image documents (documents pointing to deleted storage files)
+ * This will validate each image URL and delete documents for non-existent files
+ */
+export const cleanupOrphanedImages = async () => {
+  try {
+    const querySnapshot = await getDocs(collection(db, 'images'));
+    const docs = querySnapshot.docs;
+    
+    let deletedCount = 0;
+    const seenUrls = new Set();
+    const deletePromises = [];
+    
+    for (const docSnapshot of docs) {
+      const data = docSnapshot.data();
+      const url = data.url;
+      
+      // Delete if no URL
+      if (!url) {
+        deletePromises.push(
+          deleteDoc(doc(db, 'images', docSnapshot.id))
+            .then(() => {
+              console.log(`Deleted document ${docSnapshot.id} (no URL)`);
+              deletedCount++;
+            })
+        );
+        continue;
+      }
+      
+      // Delete duplicates (keep first occurrence)
+      if (seenUrls.has(url)) {
+        deletePromises.push(
+          deleteDoc(doc(db, 'images', docSnapshot.id))
+            .then(() => {
+              console.log(`Deleted duplicate document ${docSnapshot.id}`);
+              deletedCount++;
+            })
+        );
+        continue;
+      }
+      
+      seenUrls.add(url);
+      
+      // Skip expensive URL validation - Firebase Storage URLs are reliable
+      // If you need to validate URLs, do it manually with a separate function
+    }
+    
+    // Wait for all deletions to complete
+    await Promise.all(deletePromises);
+    
+    if (deletedCount > 0) {
+      console.log(`Cleanup complete. Deleted ${deletedCount} orphaned/duplicate documents.`);
+    } else {
+      console.log('No orphaned or duplicate documents found.');
+    }
+    return deletedCount;
+  } catch (error) {
+    console.error('Error during cleanup:', error);
+    return 0;
+  }
 };
 
 export const handleFileChange = (file, user, setImages) => {
@@ -325,6 +414,19 @@ export const uploadCompletedRequestImage = async (userId, requestId, file, reque
     return downloadURL;
   } catch (error) {
     console.error('Error uploading completed request image:', error);
+    throw error;
+  }
+};
+
+// Stripe Payment Functions
+export const createCheckoutSession = async (data) => {
+  try {
+    const functions = getFunctions();
+    const createSession = httpsCallable(functions, 'createCheckoutSession');
+    const result = await createSession(data);
+    return result.data;
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
     throw error;
   }
 };

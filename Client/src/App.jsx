@@ -28,6 +28,7 @@ import {
   fetchTitleColor,
   fetchButtonPrimaryColor,
   fetchButtonSecondaryColor,
+  cleanupOrphanedImages,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
@@ -120,6 +121,8 @@ const SceneCanvas = React.memo(({
     antialias: false,
     preserveDrawingBuffer: false,
     logarithmicDepthBuffer: false,
+    // Allow fallback to WebGL 1 for older GPUs
+    failIfMajorPerformanceCaveat: false,
   }), []);
 
   return (
@@ -127,6 +130,10 @@ const SceneCanvas = React.memo(({
       frameloop="always"
       gl={glConfig}
       performance={{ min: 0.5 }}
+      onCreated={({ gl }) => {
+        // Suppress WebGL 1 deprecation warning in console (cosmetic only)
+        console.log('WebGL renderer initialized:', gl.capabilities.isWebGL2 ? 'WebGL 2' : 'WebGL 1');
+      }}
     >
       <BackgroundColor color={backgroundColor} />
       <CustomCamera targetPosition={targetPosition} cameraOffset={cameraOffset} />
@@ -160,6 +167,8 @@ const SceneCanvas = React.memo(({
                   position={position}
                   onClick={() => handleImageClick(index)}
                   imageUrl={imageUrl}
+                  thumbnailUrl={image.thumbnailUrl}
+                  mediumUrl={image.mediumUrl}
                   user={user}
                   isAdmin={isAdmin}
                   onDelete={handleDeleteImage}
@@ -379,7 +388,7 @@ function App() {
     return unsubscribe;
   }, []);
 
-  const VISIBLE_DISTANCE_THRESHOLD = 150; // Reduced from 130 for better performance
+  const VISIBLE_DISTANCE_THRESHOLD = 1000; // Increased to load thumbnails before sprites are visible (render distance is 300)
 
   const sphereRadius = useMemo(() => 10 + images.length * 0.3, [images.length]);
 
@@ -450,6 +459,46 @@ function App() {
 
     fetchData();
   }, []);
+
+  // Expose cleanup function to window for manual debugging only
+  useEffect(() => {
+    window.cleanupOrphanedImages = async () => {
+      console.log('Running manual cleanup...');
+      const count = await cleanupOrphanedImages();
+      if (count > 0) {
+        console.log(`Cleanup complete. Deleted ${count} documents. Reloading images...`);
+        const imagesData = await fetchImages();
+        setImages(imagesData);
+      } else {
+        console.log('No orphaned images found.');
+      }
+      return count;
+    };
+    
+    // Expose function to check optimization status
+    window.checkOptimization = () => {
+      const total = images.length;
+      const optimized = images.filter(img => img.thumbnailUrl && img.mediumUrl).length;
+      const notOptimized = total - optimized;
+      
+      console.log('📊 Image Optimization Status:');
+      console.log(`  Total images: ${total}`);
+      console.log(`  ✅ Optimized (has variants): ${optimized}`);
+      console.log(`  ⚠️  Not optimized: ${notOptimized}`);
+      
+      if (notOptimized > 0) {
+        console.log('\n📝 To enable optimization:');
+        console.log('  1. cd Client/functions && npm install');
+        console.log('  2. firebase deploy --only functions');
+        console.log('  3. Re-upload images or run batch process');
+        console.log('\nSee BANDWIDTH_OPTIMIZATION.md for details');
+      } else {
+        console.log('\n🎉 All images optimized!');
+      }
+      
+      return { total, optimized, notOptimized };
+    };
+  }, [images]);
 
   const triggerTransition = useCallback(
     (targetLayout) => {

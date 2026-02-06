@@ -16,6 +16,11 @@ const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
   
   // Use requestAnimationFrame for smoother, more efficient mouse tracking
   const handleMouseMove = useCallback((event) => {
+    // Skip mouse tracking during camera animation for better performance
+    if (isMoving) {
+      return;
+    }
+    
     tempMouse.current.x = (event.clientX / window.innerWidth) * 2 - 1;
     tempMouse.current.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
@@ -27,7 +32,7 @@ const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
         needsUpdate.current = false;
       });
     }
-  }, []);
+  }, [isMoving]);
 
   const lastClickTime = useRef(0);
   const CLICK_THRESHOLD = 250; // ms between clicks to prevent double clicks

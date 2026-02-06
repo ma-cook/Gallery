@@ -7,6 +7,8 @@ const LazyImagePlane = ({
   position,
   onClick,
   imageUrl,
+  thumbnailUrl,
+  mediumUrl,
   user,
   isAdmin,
   onDelete,
@@ -59,6 +61,8 @@ const LazyImagePlane = ({
         position={position}
         onClick={onClick}
         imageUrl={imageUrl}
+        thumbnailUrl={thumbnailUrl}
+        mediumUrl={mediumUrl}
         user={user}
         isAdmin={isAdmin}
         onDelete={onDelete}

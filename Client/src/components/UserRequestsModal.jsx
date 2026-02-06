@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { fetchUserRequests } from '../firebaseFunctions';
+import PaymentModal from './PaymentModal';
 
 const UserRequestsModal = ({ isOpen, onClose, userId }) => {
   const [requests, setRequests] = useState([]);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [fullImageView, setFullImageView] = useState(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -236,6 +239,63 @@ const UserRequestsModal = ({ isOpen, onClose, userId }) => {
                         <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
                           Your artwork is ready! Click to preview.
                         </p>
+                        
+                        {!request.paymentStatus || request.paymentStatus === 'pending' ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedRequest(request);
+                              setPaymentModalOpen(true);
+                            }}
+                            style={{
+                              marginTop: '0.75rem',
+                              padding: '0.6rem 1.25rem',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: '#fff',
+                              background: '#000',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#333';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#000';
+                            }}
+                          >
+                            Pay ${request.price || 50} to Download Full Resolution
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(request.completedImageUrl, '_blank');
+                            }}
+                            style={{
+                              marginTop: '0.75rem',
+                              padding: '0.6rem 1.25rem',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              color: '#fff',
+                              background: '#388e3c',
+                              border: 'none',
+                              borderRadius: '3px',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = '#2e7d32';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = '#388e3c';
+                            }}
+                          >
+                            Download Full Resolution
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -315,6 +375,18 @@ const UserRequestsModal = ({ isOpen, onClose, userId }) => {
           </button>
         </div>
       )}
+
+      {/* Payment Modal */}
+      <PaymentModal
+        isOpen={paymentModalOpen}
+        onClose={() => {
+          setPaymentModalOpen(false);
+          setSelectedRequest(null);
+          loadRequests(); // Reload requests to update payment status
+        }}
+        request={selectedRequest}
+        userId={userId}
+      />
     </div>
   );
 };
