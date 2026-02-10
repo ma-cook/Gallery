@@ -28,13 +28,16 @@ import {
   fetchTitleColor,
   fetchButtonPrimaryColor,
   fetchButtonSecondaryColor,
+  fetchBackgroundBlurriness,
+  fetchBackgroundIntensity,
+  fetchHdrFileUrl,
   cleanupOrphanedImages,
 } from './firebaseFunctions';
 import {
   calculateSpherePositions,
   calculatePlanePositions,
 } from './utils/layoutFunctions';
-import { handleSignIn, checkIsAdmin } from './utils/authFunctions';
+import { checkIsAdmin } from './utils/authFunctions';
 
 import OrbLight from './components/OrbLight';
 import SettingsModal from './components/SettingsModal';
@@ -65,13 +68,13 @@ class Vector3Pool {
 
 const vector3Pool = new Vector3Pool();
 
-  const CustomEnvironment = React.memo(() => {
+  const CustomEnvironment = React.memo(({ backgroundBlurriness, backgroundIntensity, hdrFileUrl }) => {
     return (
       <Environment
         background
-        backgroundBlurriness={0.02}
-        backgroundIntensity={0.08}
-        files="/syferfontein_1d_clear_puresky_4k.hdr"
+        backgroundBlurriness={backgroundBlurriness}
+        backgroundIntensity={backgroundIntensity}
+        files={hdrFileUrl}
         preset={null}
       />
     );
@@ -111,6 +114,9 @@ const SceneCanvas = React.memo(({
   user,
   isAdmin,
   glowColor,
+  backgroundBlurriness,
+  backgroundIntensity,
+  hdrFileUrl,
   VISIBLE_DISTANCE_THRESHOLD
 }) => {
   const glConfig = useMemo(() => ({
@@ -137,7 +143,7 @@ const SceneCanvas = React.memo(({
     >
       <BackgroundColor color={backgroundColor} />
       <CustomCamera targetPosition={targetPosition} cameraOffset={cameraOffset} />
-      <CustomEnvironment />
+      <CustomEnvironment backgroundBlurriness={backgroundBlurriness} backgroundIntensity={backgroundIntensity} hdrFileUrl={hdrFileUrl} />
       <OrbLight glowColor={glowColor} onOrbClick={handleOrbClick} />
       
       <Suspense fallback={<Loader />}>
@@ -169,6 +175,7 @@ const SceneCanvas = React.memo(({
                   imageUrl={imageUrl}
                   thumbnailUrl={image.thumbnailUrl}
                   mediumUrl={image.mediumUrl}
+                  isGif={image.isGif}
                   user={user}
                   isAdmin={isAdmin}
                   onDelete={handleDeleteImage}
@@ -359,6 +366,12 @@ function App() {
   const setButtonPrimaryColor = useStore((state) => state.setButtonPrimaryColor);
   const buttonSecondaryColor = useStore((state) => state.buttonSecondaryColor);
   const setButtonSecondaryColor = useStore((state) => state.setButtonSecondaryColor);
+  const backgroundBlurriness = useStore((state) => state.backgroundBlurriness);
+  const setBackgroundBlurriness = useStore((state) => state.setBackgroundBlurriness);
+  const backgroundIntensity = useStore((state) => state.backgroundIntensity);
+  const setBackgroundIntensity = useStore((state) => state.setBackgroundIntensity);
+  const hdrFileUrl = useStore((state) => state.hdrFileUrl);
+  const setHdrFileUrl = useStore((state) => state.setHdrFileUrl);
   const uploadProgress = useStore((state) => state.uploadProgress);
   const setUploadProgress = useStore((state) => state.setUploadProgress);
   const visibleImageIndices = useStore((state) => state.visibleImageIndices);
@@ -366,11 +379,13 @@ function App() {
     (state) => state.setVisibleImageIndices
   );
 
-  const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSquareVisible, setIsSquareVisible] = useState(false);
+  // Auth & UI state from Zustand store (eliminates prop drilling)
+  const user = useStore((state) => state.user);
+  const setUser = useStore((state) => state.setUser);
+  const isAdmin = useStore((state) => state.isAdmin);
+  const setIsAdmin = useStore((state) => state.setIsAdmin);
+  const setIsAuthModalOpen = useStore((state) => state.setIsAuthModalOpen);
+
   const [adaptiveDPR, setAdaptiveDPR] = useState([1, 1.5]); // Experimental: Adaptive pixel ratio
 
   // Experimental: Monitor performance and adjust quality
@@ -437,6 +452,9 @@ function App() {
         titleColorData,
         buttonPrimaryColorData,
         buttonSecondaryColorData,
+        backgroundBlurrinessData,
+        backgroundIntensityData,
+        hdrFileUrlData,
       ] = await Promise.all([
         fetchImages(),
         fetchColor(),
@@ -446,6 +464,9 @@ function App() {
         fetchTitleColor(),
         fetchButtonPrimaryColor(),
         fetchButtonSecondaryColor(),
+        fetchBackgroundBlurriness(),
+        fetchBackgroundIntensity(),
+        fetchHdrFileUrl(),
       ]);
       setImages(imagesData);
       setBackgroundColor(backgroundColorData);
@@ -455,6 +476,9 @@ function App() {
       setTitleColor(titleColorData);
       setButtonPrimaryColor(buttonPrimaryColorData);
       setButtonSecondaryColor(buttonSecondaryColorData);
+      setBackgroundBlurriness(backgroundBlurrinessData);
+      setBackgroundIntensity(backgroundIntensityData);
+      setHdrFileUrl(hdrFileUrlData);
     };
 
     fetchData();
@@ -645,26 +669,8 @@ function App() {
   return (
     <div style={{ height: '100vh', position: 'relative' }}>
       <UIOverlay
-        user={user}
-        isAdmin={isAdmin}
-        uploadProgress={uploadProgress}
-        textColor={textColor}
-        titleColor={titleColor}
-        buttonPrimaryColor={buttonPrimaryColor}
-        buttonSecondaryColor={buttonSecondaryColor}
-        isMenuOpen={isMenuOpen}
-        setIsMenuOpen={setIsMenuOpen}
-        isSquareVisible={isSquareVisible}
-        setIsSquareVisible={setIsSquareVisible}
         triggerTransition={triggerTransition}
         handleFileChangeWithProgress={handleFileChangeWithProgress}
-        setIsSettingsModalOpen={setIsSettingsModalOpen}
-        setImages={setImages}
-        isAuthModalOpen={isAuthModalOpen}
-        setIsAuthModalOpen={setIsAuthModalOpen}
-        onSignIn={(email, password) =>
-          handleSignIn(email, password, setIsAuthModalOpen)
-        }
       />
       <SettingsModal
         isOpen={isSettingsModalOpen}
@@ -674,6 +680,11 @@ function App() {
         onTitleColorChange={setTitleColor}
         onButtonPrimaryColorChange={setButtonPrimaryColor}
         onButtonSecondaryColorChange={setButtonSecondaryColor}
+        onBackgroundBlurrinessChange={setBackgroundBlurriness}
+        onBackgroundIntensityChange={setBackgroundIntensity}
+        onHdrFileUrlChange={setHdrFileUrl}
+        user={user}
+        isAdmin={isAdmin}
       />
       <Loader />
       <SceneCanvas
@@ -690,6 +701,9 @@ function App() {
         user={user}
         isAdmin={isAdmin}
         glowColor={glowColor}
+        backgroundBlurriness={backgroundBlurriness}
+        backgroundIntensity={backgroundIntensity}
+        hdrFileUrl={hdrFileUrl}
         VISIBLE_DISTANCE_THRESHOLD={VISIBLE_DISTANCE_THRESHOLD}
       />
     </div>

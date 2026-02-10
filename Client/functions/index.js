@@ -9,18 +9,66 @@ const { generateImageVariants } = require('./imageOptimization');
 exports.generateImageVariants = generateImageVariants;
 
 /**
+ * Fetch all active products and their prices from Stripe
+ * Called from the client to populate product selection
+ */
+exports.getStripeProducts = functions.https.onCall(async (data, context) => {
+  try {
+    // Fetch all active products with their default prices
+    const products = await stripe.products.list({
+      active: true,
+      expand: ['data.default_price'],
+    });
+
+    // Transform products to include price information
+    const productsWithPrices = await Promise.all(
+      products.data.map(async (product) => {
+        // Fetch all prices for this product
+        const prices = await stripe.prices.list({
+          product: product.id,
+          active: true,
+        });
+
+        return {
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          images: product.images,
+          metadata: product.metadata,
+          prices: prices.data.map((price) => ({
+            id: price.id,
+            currency: price.currency,
+            unit_amount: price.unit_amount,
+            type: price.type,
+          })),
+        };
+      })
+    );
+
+    return { products: productsWithPrices };
+  } catch (error) {
+    console.error('Error fetching Stripe products:', error);
+    throw new functions.https.HttpsError(
+      'internal',
+      'Failed to fetch products',
+      error.message
+    );
+  }
+});
+
+/**
  * Create a Stripe Checkout Session
  * Called from the client to initialize payment
  */
 exports.createCheckoutSession = functions.https.onCall(async (data, context) => {
   try {
-    const { requestId, userId, price, requestName, requestDescription, returnUrl } = data;
+    const { requestId, userId, price, priceId, requestName, requestDescription, returnUrl } = data;
 
-    // Validate required parameters
-    if (!requestId || !userId || !price) {
+    // Validate required parameters - either priceId (from catalog) or price (dynamic)
+    if (!requestId || !userId || (!price && !priceId)) {
       throw new functions.https.HttpsError(
         'invalid-argument',
-        'Missing required parameters: requestId, userId, or price'
+        'Missing required parameters: requestId, userId, and either price or priceId'
       );
     }
 
@@ -46,22 +94,30 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
     }
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
+    // Use priceId from catalog if available, otherwise create dynamic price
+    const sessionConfig = {
       ui_mode: 'embedded',
       payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `Artwork: ${requestName || 'Custom Request'}`,
-              description: requestDescription || 'Full resolution artwork download',
+      line_items: priceId
+        ? [
+            {
+              price: priceId, // Use existing price from catalog
+              quantity: 1,
             },
-            unit_amount: Math.round(price * 100), // Convert to cents
-          },
-          quantity: 1,
-        },
-      ],
+          ]
+        : [
+            {
+              price_data: {
+                currency: 'usd',
+                product_data: {
+                  name: `Artwork: ${requestName || 'Custom Request'}`,
+                  description: requestDescription || 'Full resolution artwork download',
+                },
+                unit_amount: Math.round(price * 100), // Convert to cents
+              },
+              quantity: 1,
+            },
+          ],
       mode: 'payment',
       return_url: returnUrl || 'http://localhost:5173',
       metadata: {
@@ -69,7 +125,9 @@ exports.createCheckoutSession = functions.https.onCall(async (data, context) => 
         userId,
         type: 'artwork_purchase',
       },
-    });
+    };
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     // Update request with session info
     await requestRef.update({

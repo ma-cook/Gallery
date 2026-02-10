@@ -1,97 +1,34 @@
 import React, { useState } from 'react';
 import AuthModal from './AuthModal';
 import RequestsModal from './RequestsModal';
-import UserRequestsModal from './UserRequestsModal';
+import CommissionModal from './CommissionModal';
 import { signOutUser } from '../Auth';
-import { createRequest, checkUserHasRequests } from '../firebaseFunctions';
+import { handleSignIn } from '../utils/authFunctions';
+import useStore from '../store';
 
 const UIOverlay = ({
-  user,
-  isAdmin,
-  uploadProgress,
-  textColor,
-  titleColor,
-  buttonPrimaryColor,
-  buttonSecondaryColor,
-  isMenuOpen,
-  setIsMenuOpen,
-  isSquareVisible,
-  setIsSquareVisible,
   triggerTransition,
   handleFileChangeWithProgress,
-  setIsSettingsModalOpen,
-  setImages,
-  isAuthModalOpen,
-  setIsAuthModalOpen,
-  onSignIn,
 }) => {
-  const [isCommissionVisible, setIsCommissionVisible] = useState(false);
-  const [isRequestsVisible, setIsRequestsVisible] = useState(false);
-  const [isUserRequestsVisible, setIsUserRequestsVisible] = useState(false);
-  const [userHasRequests, setUserHasRequests] = useState(false);
+  // Read global state from Zustand store (eliminates prop drilling)
+  const user = useStore((state) => state.user);
+  const isAdmin = useStore((state) => state.isAdmin);
+  const uploadProgress = useStore((state) => state.uploadProgress);
+  const textColor = useStore((state) => state.textColor);
+  const titleColor = useStore((state) => state.titleColor);
+  const buttonPrimaryColor = useStore((state) => state.buttonPrimaryColor);
+  const buttonSecondaryColor = useStore((state) => state.buttonSecondaryColor);
+  const setIsSettingsModalOpen = useStore((state) => state.setIsSettingsModalOpen);
+  const setImages = useStore((state) => state.setImages);
+  const isAuthModalOpen = useStore((state) => state.isAuthModalOpen);
+  const setIsAuthModalOpen = useStore((state) => state.setIsAuthModalOpen);
+  const isCommissionVisible = useStore((state) => state.isCommissionVisible);
+  const setIsCommissionVisible = useStore((state) => state.setIsCommissionVisible);
+  const isRequestsVisible = useStore((state) => state.isRequestsVisible);
+  const setIsRequestsVisible = useStore((state) => state.setIsRequestsVisible);
+
+  // Keep ephemeral form state local (resets on unmount, no need for global)
   const [authMode, setAuthMode] = useState('signin');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: user?.email || '',
-    description: '',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Update email when user changes
-  React.useEffect(() => {
-    if (user?.email) {
-      setFormData(prev => ({ ...prev, email: user.email }));
-    }
-  }, [user]);
-
-  // Check if user has any requests
-  React.useEffect(() => {
-    const checkRequests = async () => {
-      if (user?.uid) {
-        const hasRequests = await checkUserHasRequests(user.uid);
-        setUserHasRequests(hasRequests);
-      } else {
-        setUserHasRequests(false);
-      }
-    };
-    checkRequests();
-  }, [user]);
-
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmitRequest = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      await createRequest({
-        name: formData.name,
-        email: formData.email,
-        description: formData.description,
-        userId: user?.uid || null,
-      });
-      // Reset form
-      setFormData({
-        name: '',
-        email: user?.email || '',
-        description: '',
-      });
-      alert('Request submitted successfully!');
-      setIsCommissionVisible(false);
-      // Recheck if user has requests
-      if (user?.uid) {
-        const hasRequests = await checkUserHasRequests(user.uid);
-        setUserHasRequests(hasRequests);
-      }
-    } catch (error) {
-      console.error('Error submitting request:', error);
-      alert('Failed to submit request. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   return (
     <>
@@ -256,26 +193,6 @@ const UIOverlay = ({
         >
           about
         </span>
-        {userHasRequests && (
-          <span
-            style={{
-              color: textColor,
-              fontSize: '12px',
-              cursor: 'pointer',
-              textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-              marginLeft: '40px',
-            }}
-            onClick={() => setIsUserRequestsVisible(true)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-          >
-            status
-          </span>
-        )}
         <span
           style={{
             color: textColor,
@@ -453,174 +370,24 @@ const UIOverlay = ({
         </button>
       </div>
 
-      {/* Commission Modal */}
-      {isCommissionVisible && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '42rem',
-            maxWidth: '90vw',
-            maxHeight: '85vh',
-            background: 'rgba(255, 255, 255, 0.97)',
-            border: '1px solid rgba(0, 0, 0, 0.15)',
-            borderRadius: '4px',
-            zIndex: 998,
-            padding: '1.5rem',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.25rem', alignItems: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.3px' }}>
-              Request Artwork
-            </h2>
-            <button
-              onClick={() => setIsCommissionVisible(false)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#666',
-                lineHeight: 1,
-                padding: '0 4px',
-                transition: 'color 0.2s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#000';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#666';
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
-            <form onSubmit={handleSubmitRequest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                Name *
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleFormChange}
-                required
-                style={{
-                  width: '100%',
-                  padding: '0.6rem',
-                  fontSize: '13px',
-                  border: '1px solid rgba(0, 0, 0, 0.2)',
-                  borderRadius: '3px',
-                  background: '#fff',
-                  boxSizing: 'border-box',
-                }}
-                placeholder="Your name"
-              />
-            </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleFormChange}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem',
-                    fontSize: '13px',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    background: '#fff',
-                    boxSizing: 'border-box',
-                  }}
-                  placeholder="your.email@example.com"
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleFormChange}
-                  required
-                  rows={6}
-                  style={{
-                    width: '100%',
-                    padding: '0.6rem',
-                    fontSize: '13px',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    background: '#fff',
-                    boxSizing: 'border-box',
-                    resize: 'vertical',
-                    fontFamily: 'inherit',
-                  }}
-                  placeholder="Describe your artwork request in detail..."
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                style={{
-                  padding: '0.6rem 1.25rem',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  color: '#fff',
-                  background: isSubmitting ? '#999' : '#000',
-                  border: 'none',
-                  borderRadius: '3px',
-                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isSubmitting) e.currentTarget.style.background = '#333';
-                }}
-                onMouseLeave={(e) => {
-                  if (!isSubmitting) e.currentTarget.style.background = '#000';
-                }}
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Request'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Requests Modal (Admin only) */}
       <RequestsModal
         isOpen={isRequestsVisible}
         onClose={() => setIsRequestsVisible(false)}
       />
 
-      {/* User Requests Modal */}
-      <UserRequestsModal
-        isOpen={isUserRequestsVisible}
-        onClose={() => setIsUserRequestsVisible(false)}
-        userId={user?.uid}
+      {/* Commission Modal (combines request list and form) */}
+      <CommissionModal
+        isOpen={isCommissionVisible}
+        onClose={() => setIsCommissionVisible(false)}
+        user={user}
       />
 
       {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onSignIn={onSignIn}
+        onSignIn={(email, password) => handleSignIn(email, password, setIsAuthModalOpen)}
         mode={authMode}
       />
 

@@ -138,11 +138,15 @@ export const handleFileChange = (file, user, setImages) => {
       // Handle successful upload
       try {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        // Detect if file is a GIF
+        const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
         const imageDoc = {
           url: downloadURL,
           name: file.name, // Storing the file name
           uploadedAt: new Date(),
           userId: user ? user.uid : null, // Optionally store user ID
+          isGif: isGif, // Track if this is a GIF file
+          contentType: file.type, // Store content type
         };
         const docRef = await addDoc(collection(db, 'images'), imageDoc);
 
@@ -297,16 +301,104 @@ export const fetchButtonSecondaryColor = async () => {
   }
 };
 
+export const saveBackgroundBlurriness = async (blurriness) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'backgroundBlurriness'), {
+    backgroundBlurriness: blurriness,
+  });
+};
+
+export const fetchBackgroundBlurriness = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'backgroundBlurriness');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().backgroundBlurriness;
+  } else {
+    return 0.02; // default value
+  }
+};
+
+export const saveBackgroundIntensity = async (intensity) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'backgroundIntensity'), {
+    backgroundIntensity: intensity,
+  });
+};
+
+export const fetchBackgroundIntensity = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'backgroundIntensity');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().backgroundIntensity;
+  } else {
+    return 0.08; // default value
+  }
+};
+
+export const handleHdrFileUpload = async (file) => {
+  try {
+    const storage = getStorage();
+    // Store HDR files in a dedicated folder
+    const storageRef = ref(storage, `environment/${file.name}`);
+    
+    // Upload the file
+    const uploadTask = await uploadBytesResumable(storageRef, file);
+    const downloadURL = await getDownloadURL(uploadTask.ref);
+    
+    // Save the URL to Firestore
+    await saveHdrFileUrl(downloadURL);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading HDR file:', error);
+    throw error;
+  }
+};
+
+export const saveHdrFileUrl = async (url) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'hdrFileUrl'), {
+    hdrFileUrl: url,
+  });
+};
+
+export const fetchHdrFileUrl = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'hdrFileUrl');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().hdrFileUrl;
+  } else {
+    return '/syferfontein_1d_clear_puresky_4k.hdr'; // default HDR file
+  }
+};
+
 // Request functions
-export const createRequest = async (requestData) => {
+export const createRequest = async (requestData, exampleImageFile = null) => {
   try {
     if (!requestData.userId) {
       throw new Error('User ID is required to create a request');
     }
+
+    let exampleImageUrl = null;
+
+    // Upload example image if provided
+    if (exampleImageFile) {
+      const storage = getStorage();
+      const timestamp = Date.now();
+      const storageRef = ref(storage, `requests/examples/${requestData.userId}/${timestamp}_${exampleImageFile.name}`);
+      
+      const uploadTask = await uploadBytesResumable(storageRef, exampleImageFile);
+      exampleImageUrl = await getDownloadURL(uploadTask.ref);
+    }
+
     const docRef = await addDoc(
       collection(db, 'users', requestData.userId, 'requests'),
       {
         ...requestData,
+        ...(exampleImageUrl && { exampleImageUrl }),
         status: 'open',
         createdAt: serverTimestamp(),
       }
@@ -346,6 +438,16 @@ export const updateRequestStatus = async (userId, requestId, status) => {
     await updateDoc(requestRef, { status });
   } catch (error) {
     console.error('Error updating request status:', error);
+    throw error;
+  }
+};
+
+export const deleteRequest = async (userId, requestId) => {
+  try {
+    const requestRef = doc(db, 'users', userId, 'requests', requestId);
+    await deleteDoc(requestRef);
+  } catch (error) {
+    console.error('Error deleting request:', error);
     throw error;
   }
 };
@@ -427,6 +529,19 @@ export const createCheckoutSession = async (data) => {
     return result.data;
   } catch (error) {
     console.error('Error creating checkout session:', error);
+    throw error;
+  }
+};
+
+// Fetch Stripe products from catalog
+export const getStripeProducts = async () => {
+  try {
+    const functions = getFunctions();
+    const getProducts = httpsCallable(functions, 'getStripeProducts');
+    const result = await getProducts();
+    return result.data.products;
+  } catch (error) {
+    console.error('Error fetching Stripe products:', error);
     throw error;
   }
 };

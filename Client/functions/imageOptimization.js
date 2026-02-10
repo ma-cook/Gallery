@@ -36,6 +36,27 @@ exports.generateImageVariants = functions.storage.object().onFinalize(async (obj
     return null;
   }
 
+  // Skip processing GIFs to preserve animation
+  // Just mark them in Firestore without creating variants
+  if (contentType === 'image/gif') {
+    console.log('GIF detected, skipping optimization to preserve animation');
+    const db = admin.firestore();
+    const fileName = path.basename(filePath);
+    const imagesRef = db.collection('images');
+    const snapshot = await imagesRef.where('name', '==', fileName).limit(1).get();
+    
+    if (!snapshot.empty) {
+      const docRef = snapshot.docs[0].ref;
+      await docRef.update({
+        isGif: true,
+        variantsGenerated: false, // No variants for GIFs
+        contentType: 'image/gif'
+      });
+      console.log('Firestore updated to mark GIF:', fileName);
+    }
+    return null;
+  }
+
   const bucket = admin.storage().bucket(fileBucket);
   const fileName = path.basename(filePath);
   const fileNameWithoutExt = path.parse(fileName).name;

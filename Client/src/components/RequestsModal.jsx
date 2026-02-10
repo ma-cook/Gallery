@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage } from '../firebaseFunctions';
+import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage, deleteRequest } from '../firebaseFunctions';
+import AlertDialog from './AlertDialog';
 
 const RequestsModal = ({ isOpen, onClose }) => {
   const [requests, setRequests] = useState([]);
@@ -8,6 +9,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
   const [uploadedImages, setUploadedImages] = useState({});
   const [fullImageView, setFullImageView] = useState(null);
   const [uploading, setUploading] = useState({});
+  const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
 
   useEffect(() => {
     if (isOpen) {
@@ -74,9 +76,34 @@ const RequestsModal = ({ isOpen, onClose }) => {
       });
     } catch (error) {
       console.error('Error marking as completed:', error);
-      alert('Failed to upload image and mark as completed. Please try again.');
+      setAlertDialog({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to upload image and mark as completed. Please try again.',
+        type: 'error'
+      });
     } finally {
       setUploading(prev => ({ ...prev, [requestId]: false }));
+    }
+  };
+
+  const handleDeleteRequest = async (userId, requestId) => {
+    try {
+      await deleteRequest(userId, requestId);
+      // Remove from local state
+      setRequests(requests.filter(req => req.id !== requestId));
+      // If the expanded request is deleted, collapse it
+      if (expandedRequestId === requestId) {
+        setExpandedRequestId(null);
+      }
+    } catch (error) {
+      console.error('Error deleting request:', error);
+      setAlertDialog({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to delete request. Please try again.',
+        type: 'error'
+      });
     }
   };
 
@@ -188,11 +215,15 @@ const RequestsModal = ({ isOpen, onClose }) => {
                           request.status === 'open' ? '#e3f2fd' :
                           request.status === 'in progress' ? '#fff3e0' :
                           request.status === 'completed' ? '#e8f5e9' :
+                          request.status === 'cancelled' ? '#ffebee' :
+                          request.status === 'closed' ? '#f5f5f5' :
                           '#f5f5f5',
                         color: 
                           request.status === 'open' ? '#1976d2' :
                           request.status === 'in progress' ? '#f57c00' :
                           request.status === 'completed' ? '#388e3c' :
+                          request.status === 'cancelled' ? '#c62828' :
+                          request.status === 'closed' ? '#666' :
                           '#666',
                         fontWeight: 600,
                         textTransform: 'uppercase',
@@ -201,6 +232,37 @@ const RequestsModal = ({ isOpen, onClose }) => {
                     >
                       {request.status}
                     </span>
+                    {(request.status === 'closed' || request.status === 'cancelled' || request.status === 'completed') && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRequest(request.userId, request.id);
+                        }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#999',
+                          transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#c62828';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = '#999';
+                        }}
+                        title="Delete request"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                          <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                        </svg>
+                      </button>
+                    )}
                     <span style={{ fontSize: '14px', color: '#999', transition: 'transform 0.2s ease', transform: expandedRequestId === request.id ? 'rotate(90deg)' : 'rotate(0deg)' }}>
                       ▶
                     </span>
@@ -230,6 +292,53 @@ const RequestsModal = ({ isOpen, onClose }) => {
                       </p>
                     </div>
 
+                    {request.productName && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Selected Product
+                        </label>
+                        <p style={{ margin: 0, fontSize: '13px', color: '#1a1a1a', fontWeight: 600 }}>
+                          {request.productName}
+                        </p>
+                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '12px', color: '#666' }}>
+                          ${request.priceAmount?.toFixed(2)} {request.priceCurrency}
+                        </p>
+                      </div>
+                    )}
+
+                    {request.exampleImageUrl && (
+                      <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Example Image
+                        </label>
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '120px',
+                            height: '120px',
+                            border: '1px solid rgba(0, 0, 0, 0.2)',
+                            borderRadius: '3px',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setFullImageView(request.exampleImageUrl)}
+                        >
+                          <img
+                            src={request.exampleImageUrl}
+                            alt="Example image"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        </div>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                          Click to view full image.
+                        </p>
+                      </div>
+                    )}
+
                     <div>
                       <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Update Status
@@ -250,6 +359,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
                       >
                         <option value="open">Open</option>
                         <option value="in progress">In Progress</option>
+                        <option value="cancelled">Cancelled</option>
                         <option value="closed">Closed</option>
                       </select>
                     </div>
@@ -423,6 +533,15 @@ const RequestsModal = ({ isOpen, onClose }) => {
           </button>
         </div>
       )}
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
     </div>
   );
 };

@@ -51,11 +51,104 @@ const textureCache = new Map();
 
 const ImagePlane = forwardRef(
   (
-    { originalIndex, position, onClick, imageUrl, thumbnailUrl, mediumUrl, user, isAdmin, onDelete, onError },
+    { originalIndex, position, onClick, imageUrl, thumbnailUrl, mediumUrl, isGif, user, isAdmin, onDelete, onError },
     ref
   ) => {
     // If no variants exist, disable multi-quality system for this image
-    const hasVariants = Boolean(thumbnailUrl && mediumUrl);
+    // GIFs also don't have variants (to preserve animation)
+    const hasVariants = Boolean(thumbnailUrl && mediumUrl) && !isGif;
+    
+    // Special handling for GIFs - use HTML rendering to preserve animation
+    const spriteRef = useRef();
+    const [gifLoaded, setGifLoaded] = useState(false);
+    const [gifDimensions, setGifDimensions] = useState([TARGET_SPRITE_SCREEN_WIDTH, TARGET_SPRITE_SCREEN_WIDTH]);
+    
+    // For GIFs, render as HTML img element to preserve animation
+    if (isGif) {
+      const handleDelete = () => onDelete(originalIndex);
+      
+      const handleGifClick = (event) => {
+        event.stopPropagation();
+        if (onClick) {
+          onClick(event);
+        }
+      };
+      
+      // Load GIF to get dimensions
+      useEffect(() => {
+        const img = new Image();
+        img.onload = () => {
+          const aspectRatio = img.width / img.height;
+          const height = TARGET_SPRITE_SCREEN_WIDTH / aspectRatio;
+          setGifDimensions([TARGET_SPRITE_SCREEN_WIDTH, height]);
+          setGifLoaded(true);
+        };
+        img.onerror = () => {
+          setGifLoaded(true); // Still render even if sizing fails
+        };
+        img.src = imageUrl;
+      }, [imageUrl]);
+      
+      if (!gifLoaded) {
+        return null;
+      }
+      
+      return (
+        <group position={position} ref={spriteRef}>
+          <Html
+            transform
+            distanceFactor={1}
+            position={[0, 0, 0]}
+            style={{
+              pointerEvents: 'auto',
+              width: `${gifDimensions[0] * 100}px`,
+              height: `${gifDimensions[1] * 100}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                background: 'rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <img
+                src={imageUrl}
+                alt="GIF"
+                onClick={handleGifClick}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  cursor: 'pointer',
+                  borderRadius: '8px',
+                }}
+              />
+              {isAdmin && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    zIndex: 1000,
+                  }}
+                >
+                  <DeleteButton onClick={handleDelete} />
+                </div>
+              )}
+            </div>
+          </Html>
+        </group>
+      );
+    }
+    
+    // Standard image rendering continues below...
     
     // Use refs for quality tracking to avoid re-renders during camera movement
     const qualityLevelRef = useRef('thumbnail');
@@ -367,7 +460,6 @@ const ImagePlane = forwardRef(
       };
     }, [imageUrl, onError, hasVariants, highQualityRequested]);
 
-    const spriteRef = useRef();
     const distanceCheckCounter = useRef(0); // Start at 0
     const DISTANCE_CHECK_INTERVAL = 90; // Reduced frequency - check every 90 frames (~1.5 seconds at 60fps)
 

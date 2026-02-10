@@ -24,14 +24,22 @@ const PaymentModal = ({ isOpen, onClose, request, userId }) => {
     setLoading(true);
     setError(null);
     try {
-      const { clientSecret: secret } = await createCheckoutSession({
+      const sessionData = {
         requestId: request.id,
         userId: userId,
-        price: request.price || 50, // Default price if not set
         requestName: request.name,
         requestDescription: request.description,
         returnUrl: window.location.href,
-      });
+      };
+
+      // Use priceId from Stripe Product Catalog if available, otherwise use custom price
+      if (request.priceId) {
+        sessionData.priceId = request.priceId;
+      } else {
+        sessionData.price = request.price || 50; // Default price if not set
+      }
+
+      const { clientSecret: secret } = await createCheckoutSession(sessionData);
       setClientSecret(secret);
     } catch (err) {
       console.error('Error creating checkout session:', err);

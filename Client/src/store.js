@@ -16,9 +16,21 @@ const useStore = create((set) => ({
   titleColor: '#fff4d2',
   buttonPrimaryColor: '#fff4d2',
   buttonSecondaryColor: 'rgba(0, 0, 0, 0.6)',
+  backgroundBlurriness: 0.02,
+  backgroundIntensity: 0.08,
+  hdrFileUrl: '/syferfontein_1d_clear_puresky_4k.hdr',
   uploadProgress: 0,
   visibleImageIndices: [],
   imageComponentStates: {},
+
+  // Auth state (moved from App.jsx useState)
+  user: null,
+  isAdmin: false,
+
+  // UI modal states (moved from App.jsx / UIOverlay.jsx useState)
+  isAuthModalOpen: false,
+  isCommissionVisible: false,
+  isRequestsVisible: false,
 
   // Actions
   setImages: (updater) =>
@@ -38,8 +50,20 @@ const useStore = create((set) => ({
   setTitleColor: (color) => set({ titleColor: color }),
   setButtonPrimaryColor: (color) => set({ buttonPrimaryColor: color }),
   setButtonSecondaryColor: (color) => set({ buttonSecondaryColor: color }),
+  setBackgroundBlurriness: (value) => set({ backgroundBlurriness: value }),
+  setBackgroundIntensity: (value) => set({ backgroundIntensity: value }),
+  setHdrFileUrl: (url) => set({ hdrFileUrl: url }),
   setUploadProgress: (progress) => set({ uploadProgress: progress }),
   setVisibleImageIndices: (indices) => set({ visibleImageIndices: indices }),
+
+  // Auth actions
+  setUser: (user) => set({ user }),
+  setIsAdmin: (isAdmin) => set({ isAdmin }),
+
+  // UI modal actions
+  setIsAuthModalOpen: (isOpen) => set({ isAuthModalOpen: isOpen }),
+  setIsCommissionVisible: (isVisible) => set({ isCommissionVisible: isVisible }),
+  setIsRequestsVisible: (isVisible) => set({ isRequestsVisible: isVisible }),
 
   // Actions for image component states
   ensureImageComponentState: (index) =>

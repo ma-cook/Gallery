@@ -1,4 +1,5 @@
-import React, { useEffect, Suspense, useRef } from 'react'; // Removed useState
+import React, { useEffect, Suspense, useRef } from 'react';
+import { shallow } from 'zustand/shallow';
 import ImagePlane from './ImagePlane';
 import useStore from '../store'; // Added
 
@@ -9,6 +10,7 @@ const LazyImagePlane = ({
   imageUrl,
   thumbnailUrl,
   mediumUrl,
+  isGif,
   user,
   isAdmin,
   onDelete,
@@ -22,7 +24,7 @@ const LazyImagePlane = ({
     ensureImageComponentState: state.ensureImageComponentState,
     updateImageComponentState: state.updateImageComponentState, // Changed
     imageComponentStates: state.imageComponentStates,
-  }));
+  }), shallow);
   useEffect(() => {
     ensureImageComponentState(originalIndex);
   }, [originalIndex, ensureImageComponentState]);
@@ -63,6 +65,7 @@ const LazyImagePlane = ({
         imageUrl={imageUrl}
         thumbnailUrl={thumbnailUrl}
         mediumUrl={mediumUrl}
+        isGif={isGif}
         user={user}
         isAdmin={isAdmin}
         onDelete={onDelete}
