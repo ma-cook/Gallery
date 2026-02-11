@@ -16,6 +16,11 @@ dist-ssr
 serviceAccountKey.json
 setAdmin.js
 
+# Firebase rules files
+firestore.rules
+storage.rules
+firestore.indexes.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
