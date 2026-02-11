@@ -117,28 +117,33 @@ const RequestsModal = ({ isOpen, onClose }) => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '42rem',
+        width: '520px',
         maxWidth: '90vw',
         maxHeight: '85vh',
-        background: 'rgba(255, 255, 255, 0.97)',
-        border: '1px solid rgba(0, 0, 0, 0.15)',
-        borderRadius: '4px',
-        padding: '1.5rem',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: 0,
         zIndex: 1001,
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '16px 20px',
+        borderBottom: '1px solid #eee',
+        flexShrink: 0,
+      }}>
         <h2
           style={{
             margin: 0,
-            color: '#1a1a1a',
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.3px',
+            color: '#111',
+            fontSize: '15px',
+            fontWeight: 700,
           }}
         >
           Artwork Requests
@@ -148,87 +153,82 @@ const RequestsModal = ({ isOpen, onClose }) => {
           style={{
             background: 'transparent',
             border: 'none',
-            fontSize: '24px',
+            fontSize: '20px',
             cursor: 'pointer',
-            color: '#666',
+            color: '#999',
             lineHeight: 1,
-            padding: '0 4px',
-            transition: 'color 0.2s ease',
+            padding: '4px',
+            transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#000';
+            e.currentTarget.style.color = '#111';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#666';
+            e.currentTarget.style.color = '#999';
           }}
         >
           ×
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', padding: '1.5rem' }}>Loading requests...</p>
+          <p style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '24px' }}>Loading requests...</p>
         ) : requests.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', padding: '1.5rem' }}>No requests yet.</p>
+          <p style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '24px' }}>No requests yet.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {requests.map((request) => (
               <div
                 key={request.id}
                 style={{
-                  background: '#fff',
-                  border: '1px solid rgba(0, 0, 0, 0.12)',
-                  borderRadius: '3px',
-                  padding: '1rem',
+                  background: expandedRequestId === request.id ? '#fafafa' : '#fff',
+                  border: '1px solid #eee',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: expandedRequestId === request.id ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
+                  transition: 'all 0.15s',
                 }}
                 onClick={() => toggleExpand(request.id)}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.2)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+                  e.currentTarget.style.borderColor = '#ddd';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.12)';
-                  if (expandedRequestId !== request.id) {
-                    e.currentTarget.style.boxShadow = 'none';
-                  }
+                  e.currentTarget.style.borderColor = '#eee';
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ flex: 1 }}>
-                    <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.2px' }}>
+                    <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#111' }}>
                       {request.name}
                     </h3>
-                    <p style={{ margin: '0.25rem 0 0 0', fontSize: '12px', color: '#666' }}>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#999' }}>
                       {request.email}
                     </p>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span
                       style={{
                         fontSize: '10px',
-                        padding: '0.3rem 0.6rem',
-                        borderRadius: '3px',
+                        padding: '3px 8px',
+                        borderRadius: '10px',
                         background: 
-                          request.status === 'open' ? '#e3f2fd' :
-                          request.status === 'in progress' ? '#fff3e0' :
+                          request.status === 'open' ? '#e8f4fd' :
+                          request.status === 'in progress' ? '#fff8e1' :
                           request.status === 'completed' ? '#e8f5e9' :
-                          request.status === 'cancelled' ? '#ffebee' :
+                          request.status === 'cancelled' ? '#fce4ec' :
                           request.status === 'closed' ? '#f5f5f5' :
                           '#f5f5f5',
                         color: 
-                          request.status === 'open' ? '#1976d2' :
-                          request.status === 'in progress' ? '#f57c00' :
-                          request.status === 'completed' ? '#388e3c' :
+                          request.status === 'open' ? '#1565c0' :
+                          request.status === 'in progress' ? '#e65100' :
+                          request.status === 'completed' ? '#2e7d32' :
                           request.status === 'cancelled' ? '#c62828' :
-                          request.status === 'closed' ? '#666' :
-                          '#666',
+                          request.status === 'closed' ? '#777' :
+                          '#777',
                         fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
+                        textTransform: 'capitalize',
+                        letterSpacing: '0.02em',
                       }}
                     >
                       {request.status}
@@ -264,7 +264,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
                         </svg>
                       </button>
                     )}
-                    <span style={{ fontSize: '14px', color: '#999', transition: 'transform 0.2s ease', transform: expandedRequestId === request.id ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                    <span style={{ fontSize: '12px', color: '#bbb', transition: 'transform 0.2s ease', transform: expandedRequestId === request.id ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>
                       ▶
                     </span>
                   </div>
@@ -272,53 +272,55 @@ const RequestsModal = ({ isOpen, onClose }) => {
 
                 {expandedRequestId === request.id && (
                   <div
-                    style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(0, 0, 0, 0.1)' }}
+                    style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Description
                       </label>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#1a1a1a', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                      <p style={{ margin: 0, fontSize: '13px', color: '#333', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                         {request.description}
                       </p>
                     </div>
 
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ marginBottom: '10px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Submitted
                       </label>
-                      <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
+                      <p style={{ margin: 0, fontSize: '12px', color: '#555' }}>
                         {request.createdAt ? new Date(request.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
                       </p>
                     </div>
 
                     {request.productName && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          Selected Product
+                      <div style={{ marginBottom: '10px', padding: '8px 10px', background: '#f8f8f8', borderRadius: '8px' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Product
                         </label>
-                        <p style={{ margin: 0, fontSize: '13px', color: '#1a1a1a', fontWeight: 600 }}>
-                          {request.productName}
-                        </p>
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '12px', color: '#666' }}>
-                          ${request.priceAmount?.toFixed(2)} {request.priceCurrency}
-                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                          <span style={{ fontSize: '13px', color: '#111', fontWeight: 600 }}>
+                            {request.productName}
+                          </span>
+                          <span style={{ fontSize: '13px', color: '#111', fontWeight: 700 }}>
+                            ${request.priceAmount?.toFixed(2)} <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>{request.priceCurrency?.toUpperCase()}</span>
+                          </span>
+                        </div>
                       </div>
                     )}
 
                     {request.exampleImageUrl && (
-                      <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          Example Image
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                          Reference Image
                         </label>
                         <div
                           style={{
                             position: 'relative',
-                            width: '120px',
-                            height: '120px',
-                            border: '1px solid rgba(0, 0, 0, 0.2)',
-                            borderRadius: '3px',
+                            width: '80px',
+                            height: '80px',
+                            border: '1px solid #eee',
+                            borderRadius: '8px',
                             overflow: 'hidden',
                             cursor: 'pointer',
                           }}
@@ -334,27 +336,24 @@ const RequestsModal = ({ isOpen, onClose }) => {
                             }}
                           />
                         </div>
-                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                          Click to view full image.
-                        </p>
                       </div>
                     )}
 
                     <div>
-                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Update Status
                       </label>
                       <select
                         value={request.status}
                         onChange={(e) => handleStatusChange(request.userId, request.id, e.target.value)}
                         style={{
-                          padding: '0.5rem 0.65rem',
-                          fontSize: '13px',
-                          border: '1px solid rgba(0, 0, 0, 0.2)',
-                          borderRadius: '3px',
-                          background: '#fff',
+                          padding: '8px 12px',
+                          fontSize: '12px',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          background: '#fafafa',
                           cursor: 'pointer',
-                          minWidth: '150px',
+                          minWidth: '140px',
                           fontWeight: 500,
                         }}
                       >
@@ -366,42 +365,44 @@ const RequestsModal = ({ isOpen, onClose }) => {
                     </div>
 
                     {request.completedPreviewUrl && (
-                      <div style={{ marginTop: '1rem' }}>
-                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      <div style={{ marginTop: '10px', padding: '10px', background: '#f8faf8', borderRadius: '10px', border: '1px solid #e8f0e8' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#2e7d32', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                           Completed Artwork
                         </label>
-                        <div
-                          style={{
-                            position: 'relative',
-                            width: '120px',
-                            height: '120px',
-                            border: '1px solid rgba(0, 0, 0, 0.2)',
-                            borderRadius: '3px',
-                            overflow: 'hidden',
-                            cursor: 'pointer',
-                          }}
-                          onClick={() => setFullImageView(request.completedPreviewUrl)}
-                        >
-                          <img
-                            src={request.completedPreviewUrl}
-                            alt="Completed artwork"
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <div
                             style={{
-                              width: '100%',
-                              height: '100%',
-                              objectFit: 'cover',
+                              position: 'relative',
+                              width: '60px',
+                              height: '60px',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
                             }}
-                          />
+                            onClick={() => setFullImageView(request.completedPreviewUrl)}
+                          >
+                            <img
+                              src={request.completedPreviewUrl}
+                              alt="Completed artwork"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                              }}
+                            />
+                          </div>
+                          <span style={{ fontSize: '11px', color: request.paymentStatus === 'paid' ? '#2e7d32' : '#999' }}>
+                            {request.paymentStatus === 'paid' ? '✓ Payment received' : 'Awaiting payment'}
+                          </span>
                         </div>
-                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                          {request.paymentStatus === 'paid' ? 'Payment received' : 'Awaiting payment'}
-                        </p>
                       </div>
                     )}
 
                     {!request.completedPreviewUrl && request.status !== 'completed' && (
                     <>
-                    <div style={{ marginTop: '1rem' }}>
-                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <div style={{ marginTop: '10px' }}>
+                      <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Upload Completed Artwork
                       </label>
                       <input
@@ -412,14 +413,14 @@ const RequestsModal = ({ isOpen, onClose }) => {
                         onChange={(e) => handleImageSelect(request.id, e)}
                       />
                       {uploadedImages[request.id] ? (
-                        <div style={{ marginTop: '0.5rem' }}>
+                        <div style={{ marginTop: '6px', display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
                           <div
                             style={{
                               position: 'relative',
-                              width: '120px',
-                              height: '120px',
-                              border: '1px solid rgba(0, 0, 0, 0.2)',
-                              borderRadius: '3px',
+                              width: '80px',
+                              height: '80px',
+                              border: '1px solid #eee',
+                              borderRadius: '8px',
                               overflow: 'hidden',
                               cursor: 'pointer',
                             }}
@@ -444,70 +445,83 @@ const RequestsModal = ({ isOpen, onClose }) => {
                               });
                             }}
                             style={{
-                              marginTop: '0.5rem',
-                              padding: '0.4rem 0.8rem',
+                              padding: '6px 12px',
                               fontSize: '11px',
                               fontWeight: 600,
-                              color: '#666',
+                              color: '#999',
                               background: 'transparent',
-                              border: '1px solid rgba(0, 0, 0, 0.2)',
-                              borderRadius: '3px',
+                              border: '1px solid #e0e0e0',
+                              borderRadius: '6px',
                               cursor: 'pointer',
+                              transition: 'all 0.15s',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = '#c00';
+                              e.currentTarget.style.borderColor = '#c00';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#999';
+                              e.currentTarget.style.borderColor = '#e0e0e0';
                             }}
                           >
-                            Remove Image
+                            Remove
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => document.getElementById(`file-${request.id}`).click()}
                           style={{
-                            padding: '0.5rem 1rem',
+                            marginTop: '4px',
+                            padding: '8px 14px',
                             fontSize: '12px',
                             fontWeight: 600,
-                            color: '#1a1a1a',
-                            background: '#fff',
-                            border: '1px solid rgba(0, 0, 0, 0.2)',
-                            borderRadius: '3px',
+                            color: '#555',
+                            background: '#fafafa',
+                            border: '1px dashed #ccc',
+                            borderRadius: '8px',
                             cursor: 'pointer',
-                            transition: 'all 0.2s ease',
+                            transition: 'all 0.15s',
+                            width: '100%',
+                            textAlign: 'center',
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.background = '#f8f8f8';
+                            e.currentTarget.style.background = '#f5f5f5';
+                            e.currentTarget.style.borderColor = '#999';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = '#fff';
+                            e.currentTarget.style.background = '#fafafa';
+                            e.currentTarget.style.borderColor = '#ccc';
                           }}
                         >
-                          Choose Image
+                          + Upload Image
                         </button>
                       )}
                     </div>
 
-                    <div style={{ marginTop: '1rem' }}>
+                    <div style={{ marginTop: '10px' }}>
                       <button
                         onClick={() => handleMarkCompleted(request.userId, request.id, request)}
                         disabled={!uploadedImages[request.id] || uploading[request.id]}
                         style={{
                           width: '100%',
-                          padding: '0.6rem 1rem',
-                          fontSize: '13px',
+                          padding: '10px 16px',
+                          fontSize: '12px',
                           fontWeight: 600,
-                          color: uploadedImages[request.id] && !uploading[request.id] ? '#fff' : '#999',
-                          background: uploadedImages[request.id] && !uploading[request.id] ? '#388e3c' : '#e0e0e0',
+                          color: uploadedImages[request.id] && !uploading[request.id] ? '#fff' : '#aaa',
+                          background: uploadedImages[request.id] && !uploading[request.id] ? '#2e7d32' : '#eee',
                           border: 'none',
-                          borderRadius: '3px',
+                          borderRadius: '8px',
                           cursor: uploadedImages[request.id] && !uploading[request.id] ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.2s ease',
+                          transition: 'all 0.15s',
                         }}
                         onMouseEnter={(e) => {
                           if (uploadedImages[request.id] && !uploading[request.id]) {
-                            e.currentTarget.style.background = '#2e7d32';
+                            e.currentTarget.style.background = '#1b5e20';
                           }
                         }}
                         onMouseLeave={(e) => {
                           if (uploadedImages[request.id] && !uploading[request.id]) {
-                            e.currentTarget.style.background = '#388e3c';
+                            e.currentTarget.style.background = '#2e7d32';
                           }
                         }}
                       >
@@ -533,7 +547,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.9)',
+            background: 'rgba(0, 0, 0, 0.92)',
             zIndex: 1002,
             display: 'flex',
             alignItems: 'center',
@@ -549,23 +563,31 @@ const RequestsModal = ({ isOpen, onClose }) => {
               maxWidth: '90%',
               maxHeight: '90%',
               objectFit: 'contain',
+              borderRadius: '4px',
             }}
           />
           <button
             onClick={() => setFullImageView(null)}
             style={{
               position: 'absolute',
-              top: '20px',
-              right: '20px',
-              background: 'rgba(255, 255, 255, 0.9)',
+              top: '16px',
+              right: '16px',
+              background: 'rgba(255, 255, 255, 0.15)',
               border: 'none',
-              fontSize: '32px',
+              fontSize: '20px',
               cursor: 'pointer',
-              color: '#000',
+              color: '#fff',
               lineHeight: 1,
-              padding: '0.5rem 0.75rem',
-              borderRadius: '3px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.15s',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
           >
             ×
           </button>

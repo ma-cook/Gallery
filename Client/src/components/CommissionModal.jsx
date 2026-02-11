@@ -237,56 +237,56 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '42rem',
-        maxWidth: '90vw',
+        width: '480px',
+        maxWidth: '92vw',
         maxHeight: '85vh',
-        background: 'rgba(255, 255, 255, 0.97)',
-        border: '1px solid rgba(0, 0, 0, 0.15)',
-        borderRadius: '4px',
-        padding: '1.5rem',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: 0,
         zIndex: 1001,
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(10px)',
+        boxShadow: '0 25px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #eee' }}>
         <h2
           style={{
             margin: 0,
-            color: '#1a1a1a',
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.3px',
+            color: '#111',
+            fontSize: '15px',
+            fontWeight: 700,
+            letterSpacing: '-0.2px',
           }}
         >
-          {showForm ? 'Request Artwork' : !user?.uid ? 'Commissions' : 'My Commissions'}
+          {showForm ? 'New Commission' : !user?.uid ? 'Commissions' : 'My Commissions'}
         </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           {!showForm && user?.uid && (
             <button
               onClick={() => setShowForm(true)}
               style={{
-                background: '#000',
+                background: '#111',
                 border: 'none',
-                fontSize: '20px',
+                fontSize: '14px',
                 cursor: 'pointer',
                 color: '#fff',
                 lineHeight: 1,
-                padding: '0.3rem 0.6rem',
-                borderRadius: '3px',
-                transition: 'background 0.2s ease',
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontWeight: 600,
+                transition: 'background 0.15s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#333';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#000';
+                e.currentTarget.style.background = '#111';
               }}
               title="Create new request"
             >
-              +
+              + New
             </button>
           )}
           <button
@@ -297,18 +297,21 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
             style={{
               background: 'transparent',
               border: 'none',
-              fontSize: '24px',
+              fontSize: '20px',
               cursor: 'pointer',
-              color: '#666',
+              color: '#999',
               lineHeight: 1,
-              padding: '0 4px',
-              transition: 'color 0.2s ease',
+              padding: '4px',
+              borderRadius: '4px',
+              transition: 'all 0.15s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#000';
+              e.currentTarget.style.color = '#111';
+              e.currentTarget.style.background = '#f5f5f5';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#666';
+              e.currentTarget.style.color = '#999';
+              e.currentTarget.style.background = 'transparent';
             }}
           >
             ×
@@ -316,13 +319,13 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {showForm ? (
           /* Commission Form */
-          <form onSubmit={handleSubmitRequest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <form onSubmit={handleSubmitRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                Name *
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                Name
               </label>
               <input
                 type="text"
@@ -332,20 +335,24 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                 required
                 style={{
                   width: '100%',
-                  padding: '0.6rem',
+                  padding: '9px 12px',
                   fontSize: '13px',
-                  border: '1px solid rgba(0, 0, 0, 0.2)',
-                  borderRadius: '3px',
-                  background: '#fff',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  background: '#fafafa',
                   boxSizing: 'border-box',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  outline: 'none',
                 }}
+                onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
                 placeholder="Your name"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                Email *
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                Email
               </label>
               <input
                 type="email"
@@ -355,140 +362,102 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                 required
                 style={{
                   width: '100%',
-                  padding: '0.6rem',
+                  padding: '9px 12px',
                   fontSize: '13px',
-                  border: '1px solid rgba(0, 0, 0, 0.2)',
-                  borderRadius: '3px',
-                  background: '#fff',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  background: '#fafafa',
                   boxSizing: 'border-box',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  outline: 'none',
                 }}
+                onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
                 placeholder="your.email@example.com"
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.75rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                Select Product *
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                Select Product
               </label>
               {loadingProducts ? (
-                <div style={{ textAlign: 'center', padding: '2rem' }}>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Loading products...</p>
+                <div style={{ textAlign: 'center', padding: '20px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>Loading products...</p>
                 </div>
               ) : products.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', background: '#f5f5f5', borderRadius: '3px' }}>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>No products available. Please try again later.</p>
+                <div style={{ textAlign: 'center', padding: '20px', background: '#fafafa', borderRadius: '8px' }}>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#888' }}>No products available.</p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0', maxHeight: '400px', overflowY: 'auto', paddingRight: '0.5rem', border: '1px solid rgba(0, 0, 0, 0.15)', borderRadius: '3px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderRadius: '8px', border: '1px solid #eee', overflow: 'hidden' }}>
                   {products.map(product => 
                     product.prices.map(price => {
                       const isSelected = formData.selectedPriceId === price.id;
                       const hasSelection = formData.selectedPriceId !== '';
                       
-                      // If there's a selection and this isn't it, don't render
                       if (hasSelection && !isSelected) return null;
                       
                       return (
                         <div
                           key={price.id}
+                          onClick={() => setFormData(prev => ({ ...prev, selectedPriceId: isSelected ? '' : price.id }))}
                           style={{
-                            padding: '1rem 0.5rem',
+                            padding: '10px 12px',
                             display: 'flex',
-                            gap: '1rem',
-                            alignItems: 'start',
-                            borderBottom: hasSelection ? 'none' : '1px solid rgba(0, 0, 0, 0.08)',
+                            gap: '10px',
+                            alignItems: 'center',
+                            borderBottom: hasSelection ? 'none' : '1px solid #f0f0f0',
+                            cursor: 'pointer',
+                            background: isSelected ? '#f0f7ff' : '#fff',
+                            transition: 'background 0.15s',
                           }}
+                          onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = '#fafafa'; }}
+                          onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = '#fff'; }}
                         >
-                          {/* Product Image (if available) */}
+                          {/* Radio indicator */}
+                          <div style={{
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            border: isSelected ? '5px solid #111' : '2px solid #ccc',
+                            flexShrink: 0,
+                            transition: 'all 0.15s',
+                            boxSizing: 'border-box',
+                          }} />
+
                           {product.images && product.images.length > 0 && (
                             <div style={{
-                              width: '60px',
-                              height: '60px',
-                              borderRadius: '3px',
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '6px',
                               overflow: 'hidden',
-                              border: '1px solid rgba(0, 0, 0, 0.1)',
                               flexShrink: 0,
                             }}>
                               <img
                                 src={product.images[0]}
                                 alt={product.name}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                }}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
                             </div>
                           )}
 
-                          {/* Product Details */}
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                              {/* Radio Button */}
-                              <input
-                                type="radio"
-                                name="productSelection"
-                                checked={isSelected}
-                                onChange={() => setFormData(prev => ({ ...prev, selectedPriceId: price.id }))}
-                                style={{
-                                  width: '18px',
-                                  height: '18px',
-                                  cursor: 'pointer',
-                                  flexShrink: 0,
-                                  margin: 0,
-                                }}
-                              />
-                              <span style={{ fontSize: '13px', fontWeight: 600, color: '#1a1a1a', flex: 1 }}>
-                                {product.name}
-                              </span>
-                              {/* Clear Selection Button */}
-                              {isSelected && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    setFormData(prev => ({ ...prev, selectedPriceId: '' }));
-                                  }}
-                                  style={{
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    padding: '4px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: '#999',
-                                    fontSize: '18px',
-                                    lineHeight: 1,
-                                    transition: 'color 0.2s',
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#000';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = '#999';
-                                  }}
-                                  title="Clear selection"
-                                >
-                                  ×
-                                </button>
-                              )}
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#111' }}>
+                              {product.name}
                             </div>
                             {product.description && (
-                              <div style={{ marginBottom: '0.5rem' }}>
-                                <span style={{ fontSize: '12px', color: '#666', lineHeight: '1.4' }}>
-                                  {product.description}
-                                </span>
+                              <div style={{ fontSize: '11px', color: '#888', lineHeight: '1.3', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {product.description}
                               </div>
                             )}
-                            <div>
-                              <span style={{ fontSize: '15px', fontWeight: 700, color: '#000' }}>
-                                ${(price.unit_amount / 100).toFixed(2)}
-                              </span>
-                              <span style={{ fontSize: '11px', color: '#999', marginLeft: '0.5rem', textTransform: 'uppercase' }}>
-                                {price.currency}
-                              </span>
-                            </div>
+                          </div>
+
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#111', flexShrink: 0 }}>
+                            ${(price.unit_amount / 100).toFixed(2)}
+                            <span style={{ fontSize: '10px', color: '#999', marginLeft: '3px', fontWeight: 500 }}>
+                              {price.currency.toUpperCase()}
+                            </span>
                           </div>
                         </div>
                       );
@@ -499,33 +468,38 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                Description *
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                Description
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleFormChange}
                 required
-                rows={6}
+                rows={4}
                 style={{
                   width: '100%',
-                  padding: '0.6rem',
+                  padding: '9px 12px',
                   fontSize: '13px',
-                  border: '1px solid rgba(0, 0, 0, 0.2)',
-                  borderRadius: '3px',
-                  background: '#fff',
+                  border: '1px solid #ddd',
+                  borderRadius: '8px',
+                  background: '#fafafa',
                   boxSizing: 'border-box',
                   resize: 'vertical',
                   fontFamily: 'inherit',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                  outline: 'none',
+                  lineHeight: '1.5',
                 }}
+                onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
                 placeholder="Describe your artwork request in detail..."
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                Example Image (Optional)
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                Example Image <span style={{ fontWeight: 400, color: '#999' }}>(optional)</span>
               </label>
               <input
                 type="file"
@@ -535,14 +509,14 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                 onChange={handleExampleImageSelect}
               />
               {exampleImagePreview ? (
-                <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ marginTop: '6px', display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
                   <div
                     style={{
                       position: 'relative',
-                      width: '120px',
-                      height: '120px',
-                      border: '1px solid rgba(0, 0, 0, 0.2)',
-                      borderRadius: '3px',
+                      width: '80px',
+                      height: '80px',
+                      border: '1px solid #eee',
+                      borderRadius: '8px',
                       overflow: 'hidden',
                       cursor: 'pointer',
                     }}
@@ -562,25 +536,26 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                     type="button"
                     onClick={handleRemoveExampleImage}
                     style={{
-                      marginTop: '0.5rem',
-                      padding: '0.4rem 0.8rem',
+                      padding: '6px 12px',
                       fontSize: '11px',
                       fontWeight: 600,
-                      color: '#666',
+                      color: '#999',
                       background: 'transparent',
-                      border: '1px solid rgba(0, 0, 0, 0.2)',
-                      borderRadius: '3px',
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '6px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
+                      transition: 'all 0.15s',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f5f5f5';
+                      e.currentTarget.style.color = '#c00';
+                      e.currentTarget.style.borderColor = '#c00';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#999';
+                      e.currentTarget.style.borderColor = '#e0e0e0';
                     }}
                   >
-                    Remove Image
+                    Remove
                   </button>
                 </div>
               ) : (
@@ -588,52 +563,55 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                   type="button"
                   onClick={() => document.getElementById('example-image-upload').click()}
                   style={{
-                    padding: '0.5rem 1rem',
+                    marginTop: '4px',
+                    padding: '8px 14px',
                     fontSize: '12px',
                     fontWeight: 600,
-                    color: '#1a1a1a',
-                    background: '#fff',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
+                    color: '#555',
+                    background: '#fafafa',
+                    border: '1px dashed #ccc',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
+                    transition: 'all 0.15s',
+                    width: '100%',
+                    textAlign: 'center',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#f8f8f8';
+                    e.currentTarget.style.background = '#f5f5f5';
+                    e.currentTarget.style.borderColor = '#999';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.background = '#fafafa';
+                    e.currentTarget.style.borderColor = '#ccc';
                   }}
                 >
-                  Choose Image
+                  + Upload Reference Image
                 </button>
               )}
-              <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                Upload a reference image to help illustrate your request (optional).
-              </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 style={{
                   flex: 1,
-                  padding: '0.6rem 1.25rem',
+                  padding: '10px 16px',
                   fontSize: '13px',
                   fontWeight: 600,
                   color: '#fff',
-                  background: isSubmitting ? '#999' : '#000',
+                  background: isSubmitting ? '#999' : '#111',
                   border: 'none',
-                  borderRadius: '3px',
+                  borderRadius: '8px',
                   cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.2s',
+                  transition: 'background 0.15s',
+                  letterSpacing: '0.01em',
                 }}
                 onMouseEnter={(e) => {
                   if (!isSubmitting) e.currentTarget.style.background = '#333';
                 }}
                 onMouseLeave={(e) => {
-                  if (!isSubmitting) e.currentTarget.style.background = '#000';
+                  if (!isSubmitting) e.currentTarget.style.background = '#111';
                 }}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Request'}
@@ -643,18 +621,18 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                   type="button"
                   onClick={() => setShowForm(false)}
                   style={{
-                    padding: '0.6rem 1.25rem',
+                    padding: '10px 16px',
                     fontSize: '13px',
                     fontWeight: 600,
                     color: '#666',
                     background: '#f5f5f5',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
+                    border: 'none',
+                    borderRadius: '8px',
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.15s',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = '#e0e0e0';
+                    e.currentTarget.style.background = '#eee';
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.background = '#f5f5f5';
@@ -667,16 +645,16 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
           </form>
         ) : !user?.uid ? (
           /* Auth Prompt for non-logged-in users */
-          <div style={{ padding: '1rem 0' }}>
+          <div style={{ padding: '8px 0' }}>
             <p style={{
               textAlign: 'center',
-              color: '#1a1a1a',
-              fontSize: '14px',
+              color: '#555',
+              fontSize: '13px',
               fontWeight: 500,
-              margin: '0 0 1.5rem 0',
+              margin: '0 0 16px 0',
               lineHeight: '1.5',
             }}>
-              Please sign in or create an account to create an artwork request.
+              Sign in to create a commission request.
             </p>
             <AuthModal
               isOpen={true}
@@ -689,70 +667,65 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
           /* Requests List */
           <>
             {loading ? (
-              <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', padding: '1.5rem' }}>Loading your requests...</p>
+              <p style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '24px' }}>Loading your requests...</p>
             ) : requests.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#666', fontSize: '13px', padding: '3rem 1.5rem' }}>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '14px' }}>You have no current commission requests.</p>
-                <p style={{ margin: 0, fontSize: '12px', opacity: 0.8 }}>Press the + button above to create a request</p>
+              <div style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '32px 20px' }}>
+                <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 500, color: '#555' }}>No commission requests yet</p>
+                <p style={{ margin: 0, fontSize: '12px' }}>Tap "+ New" above to get started</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 {requests.map((request) => (
                   <div
                     key={request.id}
                     style={{
-                      background: '#fff',
-                      border: '1px solid rgba(0, 0, 0, 0.12)',
-                      borderRadius: '3px',
-                      padding: '1rem',
+                      background: expandedRequestId === request.id ? '#fafafa' : '#fff',
+                      border: '1px solid #eee',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      boxShadow: expandedRequestId === request.id ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
+                      transition: 'all 0.15s',
                     }}
                     onClick={() => toggleExpand(request.id)}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.2)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.08)';
+                      e.currentTarget.style.borderColor = '#ddd';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.12)';
-                      if (expandedRequestId !== request.id) {
-                        e.currentTarget.style.boxShadow = 'none';
-                      }
+                      e.currentTarget.style.borderColor = '#eee';
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.2px' }}>
-                          Request from {request.name}
+                        <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#111' }}>
+                          {request.name}
                         </h3>
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '12px', color: '#666' }}>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '11px', color: '#999' }}>
                           {request.createdAt ? new Date(request.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
                         </p>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span
                           style={{
                             fontSize: '10px',
-                            padding: '0.3rem 0.6rem',
-                            borderRadius: '3px',
+                            padding: '3px 8px',
+                            borderRadius: '10px',
                             background: 
-                              request.status === 'open' ? '#e3f2fd' :
-                              request.status === 'in progress' ? '#fff3e0' :
+                              request.status === 'open' ? '#e8f4fd' :
+                              request.status === 'in progress' ? '#fff8e1' :
                               request.status === 'completed' ? '#e8f5e9' :
-                              request.status === 'cancelled' ? '#ffebee' :
+                              request.status === 'cancelled' ? '#fce4ec' :
                               request.status === 'closed' ? '#f5f5f5' :
                               '#f5f5f5',
                             color: 
-                              request.status === 'open' ? '#1976d2' :
-                              request.status === 'in progress' ? '#f57c00' :
-                              request.status === 'completed' ? '#388e3c' :
+                              request.status === 'open' ? '#1565c0' :
+                              request.status === 'in progress' ? '#e65100' :
+                              request.status === 'completed' ? '#2e7d32' :
                               request.status === 'cancelled' ? '#c62828' :
-                              request.status === 'closed' ? '#666' :
-                              '#666',
+                              request.status === 'closed' ? '#777' :
+                              '#777',
                             fontWeight: 600,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.5px',
+                            textTransform: 'capitalize',
+                            letterSpacing: '0.02em',
                           }}
                         >
                           {request.status}
@@ -788,7 +761,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                             </svg>
                           </button>
                         )}
-                        <span style={{ fontSize: '14px', color: '#999', transition: 'transform 0.2s ease', transform: expandedRequestId === request.id ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                        <span style={{ fontSize: '12px', color: '#bbb', transition: 'transform 0.2s ease', transform: expandedRequestId === request.id ? 'rotate(90deg)' : 'rotate(0deg)', display: 'inline-block' }}>
                           ▶
                         </span>
                       </div>
@@ -796,62 +769,65 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
 
                     {expandedRequestId === request.id && (
                       <div
-                        style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(0, 0, 0, 0.1)' }}
+                        style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #eee' }}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div style={{ marginBottom: '1rem' }}>
-                          <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <div style={{ marginBottom: '10px' }}>
+                          <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                             Description
                           </label>
-                          <p style={{ margin: 0, fontSize: '13px', color: '#1a1a1a', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                          <p style={{ margin: 0, fontSize: '13px', color: '#333', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
                             {request.description}
                           </p>
                         </div>
 
-                        <div style={{ marginBottom: '1rem' }}>
-                          <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            Email
-                          </label>
-                          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-                            {request.email}
-                          </p>
-                        </div>
-
-                        <div style={{ marginBottom: '1rem' }}>
-                          <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            Submitted
-                          </label>
-                          <p style={{ margin: 0, fontSize: '12px', color: '#666' }}>
-                            {request.createdAt ? new Date(request.createdAt.seconds * 1000).toLocaleString() : 'N/A'}
-                          </p>
+                        <div style={{ display: 'flex', gap: '16px', marginBottom: '10px' }}>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Email
+                            </label>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#555' }}>
+                              {request.email}
+                            </p>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Submitted
+                            </label>
+                            <p style={{ margin: 0, fontSize: '12px', color: '#555' }}>
+                              {request.createdAt ? new Date(request.createdAt.seconds * 1000).toLocaleDateString() : 'N/A'}
+                            </p>
+                          </div>
                         </div>
 
                         {request.productName && (
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                              Selected Product
+                          <div style={{ marginBottom: '10px', padding: '8px 10px', background: '#f8f8f8', borderRadius: '8px' }}>
+                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Product
                             </label>
-                            <p style={{ margin: 0, fontSize: '13px', color: '#1a1a1a', fontWeight: 600 }}>
-                              {request.productName}
-                            </p>
-                            <p style={{ margin: '0.25rem 0 0 0', fontSize: '12px', color: '#666' }}>
-                              ${request.priceAmount?.toFixed(2)} {request.priceCurrency}
-                            </p>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                              <span style={{ fontSize: '13px', color: '#111', fontWeight: 600 }}>
+                                {request.productName}
+                              </span>
+                              <span style={{ fontSize: '13px', color: '#111', fontWeight: 700 }}>
+                                ${request.priceAmount?.toFixed(2)} <span style={{ fontSize: '10px', color: '#999', fontWeight: 500 }}>{request.priceCurrency?.toUpperCase()}</span>
+                              </span>
+                            </div>
                           </div>
                         )}
 
                         {request.exampleImageUrl && (
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                              Example Image
+                          <div style={{ marginBottom: '10px' }}>
+                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#999', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Reference Image
                             </label>
                             <div
                               style={{
                                 position: 'relative',
-                                width: '120px',
-                                height: '120px',
-                                border: '1px solid rgba(0, 0, 0, 0.2)',
-                                borderRadius: '3px',
+                                width: '80px',
+                                height: '80px',
+                                border: '1px solid #eee',
+                                borderRadius: '8px',
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                               }}
@@ -867,32 +843,31 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                                 }}
                               />
                             </div>
-                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                              Click to view full image.
-                            </p>
                           </div>
                         )}
 
                         {request.status === 'open' && (
-                          <div style={{ marginBottom: '1rem' }}>
+                          <div style={{ marginTop: '4px' }}>
                             <button
                               onClick={() => handleCancelRequest(request.id)}
                               style={{
-                                padding: '0.5rem 1rem',
+                                padding: '7px 14px',
                                 fontSize: '12px',
                                 fontWeight: 600,
                                 color: '#c62828',
-                                background: '#fff',
-                                border: '1px solid #c62828',
-                                borderRadius: '3px',
+                                background: 'transparent',
+                                border: '1px solid #e0e0e0',
+                                borderRadius: '6px',
                                 cursor: 'pointer',
-                                transition: 'all 0.2s ease',
+                                transition: 'all 0.15s',
                               }}
                               onMouseEnter={(e) => {
-                                e.currentTarget.style.background = '#ffebee';
+                                e.currentTarget.style.background = '#fce4ec';
+                                e.currentTarget.style.borderColor = '#c62828';
                               }}
                               onMouseLeave={(e) => {
-                                e.currentTarget.style.background = '#fff';
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.borderColor = '#e0e0e0';
                               }}
                             >
                               Cancel Request
@@ -901,128 +876,139 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                         )}
 
                         {(request.completedPreviewUrl || request.completedImageUrl) && (
-                          <div style={{ marginTop: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                              Completed Artwork Preview
+                          <div style={{ marginTop: '10px', padding: '12px', background: '#f8faf8', borderRadius: '10px', border: '1px solid #e8f0e8' }}>
+                            <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#2e7d32', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                              Completed Artwork
                             </label>
-                            <div
-                              style={{
-                                position: 'relative',
-                                width: '120px',
-                                height: '120px',
-                                border: '1px solid rgba(0, 0, 0, 0.2)',
-                                borderRadius: '3px',
-                                overflow: 'hidden',
-                                cursor: 'pointer',
-                              }}
-                              onClick={() => setFullImageView({ url: request.completedPreviewUrl || request.completedImageUrl, isPaid: request.paymentStatus === 'paid' })}
-                            >
-                              <img
-                                src={request.completedPreviewUrl || request.completedImageUrl}
-                                alt="Completed artwork preview"
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                              <div
                                 style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
+                                  position: 'relative',
+                                  width: '80px',
+                                  height: '80px',
+                                  border: '1px solid #e0e0e0',
+                                  borderRadius: '8px',
+                                  overflow: 'hidden',
+                                  cursor: 'pointer',
+                                  flexShrink: 0,
                                 }}
-                              />
-                              {request.paymentStatus !== 'paid' && (
-                                <div
+                                onClick={() => setFullImageView({ url: request.completedPreviewUrl || request.completedImageUrl, isPaid: request.paymentStatus === 'paid' })}
+                              >
+                                <img
+                                  src={request.completedPreviewUrl || request.completedImageUrl}
+                                  alt="Completed artwork preview"
                                   style={{
-                                    position: 'absolute',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    background: 'rgba(0, 0, 0, 0.7)',
-                                    color: '#fff',
-                                    padding: '0.5rem 0.75rem',
-                                    borderRadius: '3px',
-                                    fontSize: '11px',
-                                    fontWeight: 600,
-                                    pointerEvents: 'none',
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
                                   }}
-                                >
-                                  Click to view
-                                </div>
-                              )}
+                                />
+                                {request.paymentStatus !== 'paid' && (
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      inset: 0,
+                                      background: 'rgba(0, 0, 0, 0.35)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <p style={{ margin: 0, fontSize: '12px', color: '#555', lineHeight: '1.4' }}>
+                                  {request.paymentStatus === 'paid'
+                                    ? 'Full resolution artwork ready for download.'
+                                    : 'Your artwork is complete. Pay to unlock full resolution.'}
+                                </p>
+                                
+                                {!request.paymentStatus || request.paymentStatus === 'pending' ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedRequest(request);
+                                      setPaymentModalOpen(true);
+                                    }}
+                                    style={{
+                                      padding: '8px 14px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      color: '#fff',
+                                      background: '#111',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      transition: 'background 0.15s',
+                                      alignSelf: 'flex-start',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.background = '#333';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.background = '#111';
+                                    }}
+                                  >
+                                    Pay ${request.priceAmount} &amp; Download
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      try {
+                                        const downloadUrl = await getFullResDownloadUrl(request.id);
+                                        const response = await fetch(downloadUrl);
+                                        const blob = await response.blob();
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `${request.name || 'artwork'}-full-resolution.${blob.type.split('/')[1] || 'png'}`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                        URL.revokeObjectURL(url);
+                                      } catch (err) {
+                                        console.error('Download failed:', err);
+                                        alert('Failed to download. Please try again.');
+                                      }
+                                    }}
+                                    style={{
+                                      padding: '8px 14px',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      color: '#fff',
+                                      background: '#2e7d32',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      transition: 'background 0.15s',
+                                      alignSelf: 'flex-start',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.background = '#1b5e20';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.background = '#2e7d32';
+                                    }}
+                                  >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                      <polyline points="7 10 12 15 17 10"/>
+                                      <line x1="12" y1="15" x2="12" y2="3"/>
+                                    </svg>
+                                    Download Full Res
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                              {request.paymentStatus === 'paid'
-                                ? 'Your full resolution artwork is ready!'
-                                : 'Your artwork is ready! Click to preview.'}
-                            </p>
-                            
-                            {!request.paymentStatus || request.paymentStatus === 'pending' ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setSelectedRequest(request);
-                                  setPaymentModalOpen(true);
-                                }}
-                                style={{
-                                  marginTop: '0.75rem',
-                                  padding: '0.6rem 1.25rem',
-                                  fontSize: '13px',
-                                  fontWeight: 600,
-                                  color: '#fff',
-                                  background: '#000',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  cursor: 'pointer',
-                                  transition: 'background 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#333';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#000';
-                                }}
-                              >
-                                Pay ${request.priceAmount} to Download Full Resolution
-                              </button>
-                            ) : (
-                              <button
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  try {
-                                    const downloadUrl = await getFullResDownloadUrl(request.id);
-                                    const response = await fetch(downloadUrl);
-                                    const blob = await response.blob();
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `${request.name || 'artwork'}-full-resolution.${blob.type.split('/')[1] || 'png'}`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(url);
-                                  } catch (err) {
-                                    console.error('Download failed:', err);
-                                    alert('Failed to download. Please try again.');
-                                  }
-                                }}
-                                style={{
-                                  marginTop: '0.75rem',
-                                  padding: '0.6rem 1.25rem',
-                                  fontSize: '13px',
-                                  fontWeight: 600,
-                                  color: '#fff',
-                                  background: '#388e3c',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  cursor: 'pointer',
-                                  transition: 'background 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.background = '#2e7d32';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = '#388e3c';
-                                }}
-                              >
-                                Download Full Resolution
-                              </button>
-                            )}
                           </div>
                         )}
                       </div>
@@ -1044,7 +1030,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.9)',
+            background: 'rgba(0, 0, 0, 0.92)',
             zIndex: 1002,
             display: 'flex',
             alignItems: 'center',
@@ -1060,6 +1046,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
               maxWidth: '90%',
               maxHeight: '90%',
               objectFit: 'contain',
+              borderRadius: '4px',
             }}
           />
           {!fullImageView.isPaid && (
@@ -1069,19 +1056,20 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                 top: '50%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
-                background: 'rgba(0, 0, 0, 0.8)',
+                background: 'rgba(0, 0, 0, 0.85)',
                 color: '#fff',
-                padding: '1.5rem 2rem',
-                borderRadius: '4px',
-                fontSize: '14px',
+                padding: '16px 24px',
+                borderRadius: '10px',
+                fontSize: '13px',
                 fontWeight: 600,
                 pointerEvents: 'none',
                 textAlign: 'center',
+                backdropFilter: 'blur(4px)',
               }}
             >
               Preview Only<br />
-              <span style={{ fontSize: '12px', fontWeight: 400, opacity: 0.9 }}>
-                Full resolution available on request
+              <span style={{ fontSize: '11px', fontWeight: 400, opacity: 0.8, marginTop: '4px', display: 'inline-block' }}>
+                Pay to unlock full resolution
               </span>
             </div>
           )}
@@ -1089,17 +1077,24 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
             onClick={() => setFullImageView(null)}
             style={{
               position: 'absolute',
-              top: '20px',
-              right: '20px',
-              background: 'rgba(255, 255, 255, 0.9)',
+              top: '16px',
+              right: '16px',
+              background: 'rgba(255, 255, 255, 0.15)',
               border: 'none',
-              fontSize: '32px',
+              fontSize: '20px',
               cursor: 'pointer',
-              color: '#000',
+              color: '#fff',
               lineHeight: 1,
-              padding: '0.5rem 0.75rem',
-              borderRadius: '3px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'background 0.15s',
             }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.25)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.15)'; }}
           >
             ×
           </button>

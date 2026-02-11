@@ -124,73 +124,79 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '42rem',
+        width: '480px',
         maxWidth: '90vw',
         maxHeight: '85vh',
-        background: 'rgba(255, 255, 255, 0.97)',
-        border: '1px solid rgba(0, 0, 0, 0.15)',
-        borderRadius: '4px',
-        padding: '1.5rem',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: 0,
         zIndex: 1001,
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '16px 20px',
+        borderBottom: '1px solid #eee',
+        flexShrink: 0,
+      }}>
         <h2
           style={{
             margin: 0,
-            color: '#1a1a1a',
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.3px',
+            color: '#111',
+            fontSize: '15px',
+            fontWeight: 700,
           }}
         >
           Manage Stripe Products
         </h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             onClick={() => setShowAddForm(true)}
             style={{
-              background: '#000',
+              background: '#111',
               border: 'none',
-              fontSize: '20px',
+              fontSize: '12px',
+              fontWeight: 600,
               cursor: 'pointer',
               color: '#fff',
               lineHeight: 1,
-              padding: '0.3rem 0.6rem',
-              borderRadius: '3px',
-              transition: 'background 0.2s ease',
+              padding: '6px 12px',
+              borderRadius: '6px',
+              transition: 'background 0.15s',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = '#333';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = '#000';
+              e.currentTarget.style.background = '#111';
             }}
             title="Add new product"
           >
-            +
+            + New
           </button>
           <button
             onClick={onClose}
             style={{
               background: 'transparent',
               border: 'none',
-              fontSize: '24px',
+              fontSize: '20px',
               cursor: 'pointer',
-              color: '#666',
+              color: '#999',
               lineHeight: 1,
-              padding: '0 4px',
-              transition: 'color 0.2s ease',
+              padding: '4px',
+              transition: 'color 0.15s',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#000';
+              e.currentTarget.style.color = '#111';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#666';
+              e.currentTarget.style.color = '#999';
             }}
           >
             ×
@@ -198,33 +204,39 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', padding: '1.5rem' }}>Loading products...</p>
+          <p style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '24px' }}>Loading products...</p>
         ) : products.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666', fontSize: '13px', padding: '1.5rem' }}>No products found. Click + to add one.</p>
+          <div style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '32px 20px' }}>
+            <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 500, color: '#555' }}>No products yet</p>
+            <p style={{ margin: 0, fontSize: '12px' }}>Click "+ New" to create one</p>
+          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {products.map((product) => (
               <div
                 key={product.id}
                 style={{
                   background: '#fff',
-                  border: '1px solid rgba(0, 0, 0, 0.12)',
-                  borderRadius: '3px',
-                  padding: '1rem',
+                  border: '1px solid #eee',
+                  borderRadius: '10px',
+                  padding: '12px 14px',
                   display: 'flex',
-                  gap: '1rem',
-                  alignItems: 'start',
+                  gap: '12px',
+                  alignItems: 'center',
+                  transition: 'border-color 0.15s',
                 }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#ddd'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#eee'; }}
               >
                 {product.images && product.images.length > 0 && (
                   <div style={{
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '3px',
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '8px',
                     overflow: 'hidden',
-                    border: '1px solid rgba(0, 0, 0, 0.1)',
+                    border: '1px solid #eee',
                     flexShrink: 0,
                   }}>
                     <img
@@ -240,28 +252,28 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                 )}
                 
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#1a1a1a', letterSpacing: '-0.2px', marginBottom: '0.25rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '13px', fontWeight: 600, color: '#111', marginBottom: '2px' }}>
                     {product.name}
                   </h3>
                   {product.description && (
-                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '12px', color: '#666', lineHeight: '1.4' }}>
+                    <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#888', lineHeight: '1.3', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {product.description}
                     </p>
                   )}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                     {product.prices.map((price) => (
                       <span
                         key={price.id}
                         style={{
-                          fontSize: '13px',
-                          padding: '0.25rem 0.5rem',
+                          fontSize: '12px',
+                          padding: '2px 6px',
                           background: '#f5f5f5',
-                          borderRadius: '3px',
-                          color: '#1a1a1a',
-                          fontWeight: 600,
+                          borderRadius: '4px',
+                          color: '#111',
+                          fontWeight: 700,
                         }}
                       >
-                        ${(price.unit_amount / 100).toFixed(2)} {price.currency.toUpperCase()}
+                        ${(price.unit_amount / 100).toFixed(2)} <span style={{ fontSize: '9px', color: '#999', fontWeight: 500 }}>{price.currency.toUpperCase()}</span>
                       </span>
                     ))}
                   </div>
@@ -277,15 +289,15 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#999',
-                    transition: 'color 0.2s',
+                    color: '#bbb',
+                    transition: 'color 0.15s',
                     flexShrink: 0,
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = '#c62828';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.color = '#999';
+                    e.currentTarget.style.color = '#bbb';
                   }}
                   title="Delete product"
                 >
@@ -328,26 +340,30 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: '32rem',
+              width: '400px',
               maxWidth: '90vw',
               maxHeight: '85vh',
               background: '#fff',
-              border: '1px solid rgba(0, 0, 0, 0.15)',
-              borderRadius: '4px',
-              padding: '1.5rem',
+              borderRadius: '12px',
+              padding: 0,
               zIndex: 1003,
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-              overflowY: 'auto',
+              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.15)',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              padding: '16px 20px',
+              borderBottom: '1px solid #eee',
+            }}>
               <h3
                 style={{
                   margin: 0,
-                  color: '#1a1a1a',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  letterSpacing: '-0.3px',
+                  color: '#111',
+                  fontSize: '15px',
+                  fontWeight: 700,
                 }}
               >
                 Add New Product
@@ -360,28 +376,28 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  fontSize: '24px',
+                  fontSize: '20px',
                   cursor: 'pointer',
-                  color: '#666',
+                  color: '#999',
                   lineHeight: 1,
-                  padding: '0 4px',
-                  transition: 'color 0.2s ease',
+                  padding: '4px',
+                  transition: 'color 0.15s',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#000';
+                  e.currentTarget.style.color = '#111';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#666';
+                  e.currentTarget.style.color = '#999';
                 }}
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleCreateProduct} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleCreateProduct} style={{ display: 'flex', flexDirection: 'column', gap: '14px', padding: '16px 20px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                  Product Name *
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                  Product Name
                 </label>
                 <input
                   type="text"
@@ -392,20 +408,24 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                   autoFocus
                   style={{
                     width: '100%',
-                    padding: '0.6rem',
+                    padding: '9px 12px',
                     fontSize: '13px',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    background: '#fff',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    background: '#fafafa',
                     boxSizing: 'border-box',
+                    transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
+                    outline: 'none',
                   }}
+                  onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                  onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
                   placeholder="e.g., Digital Portrait"
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                  Description
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                  Description <span style={{ fontWeight: 400, color: '#999' }}>(optional)</span>
                 </label>
                 <textarea
                   name="description"
@@ -414,23 +434,28 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                   rows={3}
                   style={{
                     width: '100%',
-                    padding: '0.6rem',
+                    padding: '9px 12px',
                     fontSize: '13px',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    background: '#fff',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    background: '#fafafa',
                     boxSizing: 'border-box',
                     resize: 'vertical',
                     fontFamily: 'inherit',
+                    transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
+                    outline: 'none',
+                    lineHeight: '1.5',
                   }}
-                  placeholder="Optional description..."
+                  onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                  onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
+                  placeholder="Describe the product..."
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem' }}>
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <div style={{ flex: 2 }}>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                    Price *
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                    Price
                   </label>
                   <input
                     type="number"
@@ -442,20 +467,24 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                     step="0.01"
                     style={{
                       width: '100%',
-                      padding: '0.6rem',
+                      padding: '9px 12px',
                       fontSize: '13px',
-                      border: '1px solid rgba(0, 0, 0, 0.2)',
-                      borderRadius: '3px',
-                      background: '#fff',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      background: '#fafafa',
                       boxSizing: 'border-box',
+                      transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
+                      outline: 'none',
                     }}
+                    onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                    onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
                     placeholder="50.00"
                   />
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                    Currency *
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                    Currency
                   </label>
                   <select
                     name="currency"
@@ -463,11 +492,11 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                     onChange={handleFormChange}
                     style={{
                       width: '100%',
-                      padding: '0.6rem',
+                      padding: '9px 12px',
                       fontSize: '13px',
-                      border: '1px solid rgba(0, 0, 0, 0.2)',
-                      borderRadius: '3px',
-                      background: '#fff',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      background: '#fafafa',
                       boxSizing: 'border-box',
                     }}
                   >
@@ -480,8 +509,8 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '12px', fontWeight: 600, color: '#555' }}>
-                  Image URL (Optional)
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 600, color: '#444', letterSpacing: '0.01em' }}>
+                  Image URL <span style={{ fontWeight: 400, color: '#999' }}>(optional)</span>
                 </label>
                 <input
                   type="url"
@@ -490,38 +519,43 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                   onChange={handleFormChange}
                   style={{
                     width: '100%',
-                    padding: '0.6rem',
+                    padding: '9px 12px',
                     fontSize: '13px',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
-                    background: '#fff',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    background: '#fafafa',
                     boxSizing: 'border-box',
+                    transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
+                    outline: 'none',
                   }}
+                  onFocus={(e) => { e.target.style.borderColor = '#111'; e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)'; e.target.style.background = '#fff'; }}
+                  onBlur={(e) => { e.target.style.borderColor = '#ddd'; e.target.style.boxShadow = 'none'; e.target.style.background = '#fafafa'; }}
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
                 <button
                   type="submit"
                   disabled={creating}
                   style={{
                     flex: 1,
-                    padding: '0.6rem 1.25rem',
+                    padding: '10px 16px',
                     fontSize: '13px',
                     fontWeight: 600,
                     color: '#fff',
-                    background: creating ? '#999' : '#000',
+                    background: creating ? '#999' : '#111',
                     border: 'none',
-                    borderRadius: '3px',
+                    borderRadius: '8px',
                     cursor: creating ? 'not-allowed' : 'pointer',
-                    transition: 'background 0.2s',
+                    transition: 'background 0.15s',
+                    letterSpacing: '0.01em',
                   }}
                   onMouseEnter={(e) => {
                     if (!creating) e.currentTarget.style.background = '#333';
                   }}
                   onMouseLeave={(e) => {
-                    if (!creating) e.currentTarget.style.background = '#000';
+                    if (!creating) e.currentTarget.style.background = '#111';
                   }}
                 >
                   {creating ? 'Creating...' : 'Create Product'}
@@ -534,18 +568,18 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
                   }}
                   disabled={creating}
                   style={{
-                    padding: '0.6rem 1.25rem',
+                    padding: '10px 16px',
                     fontSize: '13px',
                     fontWeight: 600,
                     color: '#666',
                     background: '#f5f5f5',
-                    border: '1px solid rgba(0, 0, 0, 0.2)',
-                    borderRadius: '3px',
+                    border: 'none',
+                    borderRadius: '8px',
                     cursor: creating ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.15s',
                   }}
                   onMouseEnter={(e) => {
-                    if (!creating) e.currentTarget.style.background = '#e0e0e0';
+                    if (!creating) e.currentTarget.style.background = '#eee';
                   }}
                   onMouseLeave={(e) => {
                     if (!creating) e.currentTarget.style.background = '#f5f5f5';

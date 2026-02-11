@@ -30,9 +30,9 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
 
   const content = (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-          <label style={{ color: '#555', fontSize: '12px', fontWeight: 600 }}>Email</label>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label style={{ color: '#444', fontSize: '12px', fontWeight: 600, letterSpacing: '0.01em' }}>Email</label>
           <input
             type="email"
             value={email}
@@ -40,25 +40,29 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
             required
             placeholder="you@example.com"
             style={{
-              padding: '0.55rem 0.7rem',
-              background: '#fff',
-              border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '3px',
+              padding: '9px 12px',
+              background: '#fafafa',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
               color: '#000',
               fontSize: '13px',
               outline: 'none',
-              transition: 'border-color 0.2s ease',
+              transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.4)';
+              e.currentTarget.style.borderColor = '#111';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)';
+              e.currentTarget.style.background = '#fff';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.2)';
+              e.currentTarget.style.borderColor = '#ddd';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.background = '#fafafa';
             }}
           />
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-          <label style={{ color: '#555', fontSize: '12px', fontWeight: 600 }}>Password</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <label style={{ color: '#444', fontSize: '12px', fontWeight: 600, letterSpacing: '0.01em' }}>Password</label>
           <input
             type="password"
             value={password}
@@ -66,20 +70,24 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
             required
             placeholder="••••••••"
             style={{
-              padding: '0.55rem 0.7rem',
-              background: '#fff',
-              border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '3px',
+              padding: '9px 12px',
+              background: '#fafafa',
+              border: '1px solid #ddd',
+              borderRadius: '8px',
               color: '#000',
               fontSize: '13px',
               outline: 'none',
-              transition: 'border-color 0.2s ease',
+              transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.4)';
+              e.currentTarget.style.borderColor = '#111';
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.06)';
+              e.currentTarget.style.background = '#fff';
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.2)';
+              e.currentTarget.style.borderColor = '#ddd';
+              e.currentTarget.style.boxShadow = 'none';
+              e.currentTarget.style.background = '#fafafa';
             }}
           />
         </div>
@@ -88,22 +96,23 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
           type="submit"
           style={{
             width: '100%',
-            padding: '0.6rem',
-            background: '#000',
+            padding: '10px',
+            background: '#111',
             border: 'none',
-            borderRadius: '3px',
+            borderRadius: '8px',
             color: '#fff',
             fontSize: '13px',
             fontWeight: 600,
             cursor: 'pointer',
-            transition: 'background 0.2s ease',
-            marginTop: '0.4rem',
+            transition: 'background 0.15s',
+            marginTop: '4px',
+            letterSpacing: '0.01em',
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = '#333';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#000';
+            e.currentTarget.style.background = '#111';
           }}
         >
           {isSignIn ? 'Sign In' : 'Create Account'}
@@ -113,12 +122,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
-        gap: '0.75rem', 
-        margin: '1rem 0 0.85rem',
+        gap: '10px', 
+        margin: '14px 0',
       }}>
-        <div style={{ flex: 1, height: '1px', background: 'rgba(0, 0, 0, 0.15)' }} />
-        <span style={{ color: '#666', fontSize: '11px', fontWeight: 600 }}>OR</span>
-        <div style={{ flex: 1, height: '1px', background: 'rgba(0, 0, 0, 0.15)' }} />
+        <div style={{ flex: 1, height: '1px', background: '#eee' }} />
+        <span style={{ color: '#999', fontSize: '11px', fontWeight: 600 }}>OR</span>
+        <div style={{ flex: 1, height: '1px', background: '#eee' }} />
       </div>
 
       <button
@@ -126,27 +135,27 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
         type="button"
         style={{
           width: '100%',
-          padding: '0.6rem',
-          background: '#fff',
-          border: '1px solid rgba(0, 0, 0, 0.2)',
-          borderRadius: '3px',
-          color: '#000',
+          padding: '10px',
+          background: '#fafafa',
+          border: '1px solid #ddd',
+          borderRadius: '8px',
+          color: '#111',
           fontSize: '13px',
           fontWeight: 600,
           cursor: 'pointer',
-          transition: 'all 0.2s ease',
+          transition: 'all 0.15s',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '0.5rem',
+          gap: '8px',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#f8f8f8';
-          e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.3)';
+          e.currentTarget.style.background = '#f0f0f0';
+          e.currentTarget.style.borderColor = '#ccc';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#fff';
-          e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.2)';
+          e.currentTarget.style.background = '#fafafa';
+          e.currentTarget.style.borderColor = '#ddd';
         }}
       >
         <svg width="16" height="16" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -171,24 +180,29 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '22rem',
+        width: '340px',
         maxWidth: '90vw',
-        background: 'rgba(255, 255, 255, 0.97)',
-        border: '1px solid rgba(0, 0, 0, 0.15)',
-        borderRadius: '4px',
-        padding: '1.5rem',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: 0,
         zIndex: 1000,
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+        overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '16px 20px',
+        borderBottom: '1px solid #eee',
+      }}>
         <h2
           style={{
             margin: 0,
-            color: '#1a1a1a',
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.3px',
+            color: '#111',
+            fontSize: '15px',
+            fontWeight: 700,
           }}
         >
           {title}
@@ -198,9 +212,9 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
           style={{
             background: 'transparent',
             border: 'none',
-            fontSize: '24px',
+            fontSize: '20px',
             cursor: 'pointer',
-            color: '#666',
+            color: '#999',
             lineHeight: 1,
             padding: 0,
             width: '24px',
@@ -208,18 +222,21 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#000';
+            e.currentTarget.style.color = '#111';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#666';
+            e.currentTarget.style.color = '#999';
           }}
         >
           ×
         </button>
       </div>
-      {content}
+      <div style={{ padding: '16px 20px' }}>
+        {content}
+      </div>
     </div>
   );
 }

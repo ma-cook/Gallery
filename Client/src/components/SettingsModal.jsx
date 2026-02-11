@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import useStore from '../store';
 import AlertDialog from './AlertDialog';
 import {
@@ -10,6 +10,7 @@ import {
   saveBackgroundBlurriness,
   saveBackgroundIntensity,
   handleHdrFileUpload,
+  saveSocialLinks,
 } from '../firebaseFunctions';
 
 function SettingsModal({
@@ -33,8 +34,20 @@ function SettingsModal({
   const buttonSecondaryColor = useStore((state) => state.buttonSecondaryColor);
   const backgroundBlurriness = useStore((state) => state.backgroundBlurriness);
   const backgroundIntensity = useStore((state) => state.backgroundIntensity);
+  const socialLinks = useStore((state) => state.socialLinks);
+  const setSocialLinks = useStore((state) => state.setSocialLinks);
   const [isUploadingHdr, setIsUploadingHdr] = useState(false);
   const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+  const [newLink, setNewLink] = useState({ platform: 'x', url: '' });
+  const [editingLinks, setEditingLinks] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Initialize editingLinks from socialLinks only when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setEditingLinks([...socialLinks]);
+    }
+  }, [isOpen]);
 
   const handleGlowColorChange = useCallback(
     async (event) => {
@@ -134,6 +147,63 @@ function SettingsModal({
     [onHdrFileUrlChange]
   );
 
+  const handleAddLink = async () => {
+    if (!newLink.url.trim()) {
+      setAlertDialog({
+        isOpen: true,
+        title: 'Invalid URL',
+        message: 'Please enter a valid URL',
+        type: 'error'
+      });
+      return;
+    }
+    const updatedLinks = [...editingLinks, { ...newLink, id: Date.now() }];
+    try {
+      await saveSocialLinks(updatedLinks);
+      setSocialLinks(updatedLinks);
+      setEditingLinks(updatedLinks);
+      setNewLink({ platform: 'x', url: '' });
+      setShowAddForm(false);
+      setAlertDialog({
+        isOpen: true,
+        title: 'Success',
+        message: 'Social link added successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Error saving social link:', error);
+      setAlertDialog({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to save social link',
+        type: 'error'
+      });
+    }
+  };
+
+  const handleRemoveLink = async (id) => {
+    const updatedLinks = editingLinks.filter(link => link.id !== id);
+    try {
+      await saveSocialLinks(updatedLinks);
+      setSocialLinks(updatedLinks);
+      setEditingLinks(updatedLinks);
+      setAlertDialog({
+        isOpen: true,
+        title: 'Success',
+        message: 'Social link removed successfully',
+        type: 'success'
+      });
+    } catch (error) {
+      console.error('Error removing social link:', error);
+      setAlertDialog({
+        isOpen: true,
+        title: 'Error',
+        message: 'Failed to remove social link',
+        type: 'error'
+      });
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -143,25 +213,33 @@ function SettingsModal({
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '26rem',
-        maxWidth: '90vw',
-        background: 'rgba(255, 255, 255, 0.97)',
-        border: '1px solid rgba(0, 0, 0, 0.15)',
-        borderRadius: '4px',
-        padding: '1.5rem',
+        width: '640px',
+        maxWidth: '95vw',
+        maxHeight: '90vh',
+        background: '#fff',
+        borderRadius: '12px',
+        padding: 0,
         zIndex: 1001,
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-        backdropFilter: 'blur(10px)',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '16px 20px',
+        borderBottom: '1px solid #eee',
+        flexShrink: 0,
+      }}>
         <h2
           style={{
             margin: 0,
-            color: '#1a1a1a',
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.3px',
+            color: '#111',
+            fontSize: '15px',
+            fontWeight: 700,
           }}
         >
           Appearance Settings
@@ -171,35 +249,37 @@ function SettingsModal({
           style={{
             background: 'transparent',
             border: 'none',
-            fontSize: '24px',
+            fontSize: '20px',
             cursor: 'pointer',
-            color: '#666',
+            color: '#999',
             lineHeight: 1,
-            padding: '0 4px',
-            transition: 'color 0.2s ease',
+            padding: '4px',
+            transition: 'color 0.15s',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#000';
+            e.currentTarget.style.color = '#111';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#666';
+            e.currentTarget.style.color = '#999';
           }}
         >
           ×
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', padding: '20px', overflowY: 'auto', flex: 1 }}>
+        {/* Left Column - Appearance Settings */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         <div>
           <label
             style={{
               display: 'block',
-              fontSize: '13px',
-              fontWeight: 500,
-              color: '#4a4a4a',
-              marginBottom: '0.5rem',
+              fontSize: '10px',
+              fontWeight: 600,
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             Orb Light Color
@@ -210,10 +290,11 @@ function SettingsModal({
             onChange={handleGlowColorChange}
             style={{
               width: '100%',
-              height: '48px',
-              border: '1px solid rgba(0, 0, 0, 0.15)',
+              height: '40px',
+              border: '1px solid #eee',
               borderRadius: '8px',
               cursor: 'pointer',
+              padding: '2px',
             }}
           />
         </div>
@@ -222,12 +303,12 @@ function SettingsModal({
           <label
             style={{
               display: 'block',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 600,
-              color: '#555',
-              marginBottom: '0.4rem',
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             UI Text Color
@@ -239,9 +320,10 @@ function SettingsModal({
             style={{
               width: '100%',
               height: '40px',
-              border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '3px',
+              border: '1px solid #eee',
+              borderRadius: '8px',
               cursor: 'pointer',
+              padding: '2px',
             }}
           />
         </div>
@@ -250,12 +332,12 @@ function SettingsModal({
           <label
             style={{
               display: 'block',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 600,
-              color: '#555',
-              marginBottom: '0.4rem',
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             Title Color
@@ -267,9 +349,10 @@ function SettingsModal({
             style={{
               width: '100%',
               height: '40px',
-              border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '3px',
+              border: '1px solid #eee',
+              borderRadius: '8px',
               cursor: 'pointer',
+              padding: '2px',
             }}
           />
         </div>
@@ -278,12 +361,12 @@ function SettingsModal({
           <label
             style={{
               display: 'block',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 600,
-              color: '#555',
-              marginBottom: '0.4rem',
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             Button Primary (Icon & Border)
@@ -295,9 +378,10 @@ function SettingsModal({
             style={{
               width: '100%',
               height: '40px',
-              border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '3px',
+              border: '1px solid #eee',
+              borderRadius: '8px',
               cursor: 'pointer',
+              padding: '2px',
             }}
           />
         </div>
@@ -306,12 +390,12 @@ function SettingsModal({
           <label
             style={{
               display: 'block',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 600,
-              color: '#555',
-              marginBottom: '0.4rem',
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             Button Secondary (Background)
@@ -323,23 +407,24 @@ function SettingsModal({
             style={{
               width: '100%',
               height: '40px',
-              border: '1px solid rgba(0, 0, 0, 0.2)',
-              borderRadius: '3px',
+              border: '1px solid #eee',
+              borderRadius: '8px',
               cursor: 'pointer',
+              padding: '2px',
             }}
           />
         </div>
 
-        <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.1)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+        <div style={{ borderTop: '1px solid #eee', paddingTop: '14px', marginTop: '4px' }}>
           <label
             style={{
               display: 'block',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 600,
-              color: '#555',
-              marginBottom: '0.4rem',
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             Background Blurriness: {backgroundBlurriness.toFixed(2)}
@@ -362,12 +447,12 @@ function SettingsModal({
           <label
             style={{
               display: 'block',
-              fontSize: '11px',
+              fontSize: '10px',
               fontWeight: 600,
-              color: '#555',
-              marginBottom: '0.4rem',
+              color: '#999',
+              marginBottom: '6px',
               textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              letterSpacing: '0.04em',
             }}
           >
             Background Intensity: {backgroundIntensity.toFixed(2)}
@@ -387,16 +472,16 @@ function SettingsModal({
         </div>
 
         {isAdmin && (
-          <div style={{ borderTop: '1px solid rgba(0, 0, 0, 0.1)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+          <div style={{ borderTop: '1px solid #eee', paddingTop: '14px', marginTop: '4px' }}>
             <label
               style={{
                 display: 'block',
-                fontSize: '11px',
+                fontSize: '10px',
                 fontWeight: 600,
-                color: '#555',
-                marginBottom: '0.6rem',
+                color: '#999',
+                marginBottom: '8px',
                 textTransform: 'uppercase',
-                letterSpacing: '0.5px',
+                letterSpacing: '0.04em',
               }}
             >
               Environment HDR File
@@ -416,23 +501,23 @@ function SettingsModal({
                 htmlFor="hdr-upload-input"
                 style={{
                   display: 'inline-block',
-                  padding: '10px 16px',
-                  backgroundColor: isUploadingHdr ? '#ccc' : '#007BFF',
+                  padding: '9px 16px',
+                  backgroundColor: isUploadingHdr ? '#ccc' : '#111',
                   color: 'white',
-                  borderRadius: '4px',
+                  borderRadius: '8px',
                   cursor: isUploadingHdr ? 'not-allowed' : 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  transition: 'background-color 0.2s ease',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  transition: 'background-color 0.15s',
                   textAlign: 'center',
                   width: '100%',
                   boxSizing: 'border-box',
                 }}
                 onMouseEnter={(e) => {
-                  if (!isUploadingHdr) e.currentTarget.style.backgroundColor = '#0056b3';
+                  if (!isUploadingHdr) e.currentTarget.style.backgroundColor = '#333';
                 }}
                 onMouseLeave={(e) => {
-                  if (!isUploadingHdr) e.currentTarget.style.backgroundColor = '#007BFF';
+                  if (!isUploadingHdr) e.currentTarget.style.backgroundColor = '#111';
                 }}
               >
                 {isUploadingHdr ? 'Uploading...' : 'Upload New HDR File'}
@@ -440,12 +525,184 @@ function SettingsModal({
             </div>
             <p style={{
               fontSize: '10px',
-              color: '#777',
-              marginTop: '0.5rem',
+              color: '#999',
+              marginTop: '6px',
               marginBottom: 0,
             }}>
-              The HDR file will be used as the environment background. Only .hdr files are supported.
+              Only .hdr files are supported.
             </p>
+          </div>
+        )}
+        </div>
+
+        {/* Right Column - Social Links */}
+        {isAdmin && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '12px', 
+              fontWeight: 600, 
+              color: '#111',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}>
+              Social Media Links
+            </h3>
+
+            {/* Existing Links List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '280px', overflowY: 'auto' }}>
+              {editingLinks.map((link) => (
+                <div 
+                  key={link.id}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    padding: '8px 10px',
+                    background: '#fafafa',
+                    borderRadius: '8px',
+                    border: '1px solid #eee',
+                  }}
+                >
+                  <span style={{ fontSize: '12px', color: '#555', minWidth: '70px', textTransform: 'capitalize', fontWeight: 500 }}>
+                    {link.platform}
+                  </span>
+                  <input
+                    type="text"
+                    value={link.url}
+                    onChange={(e) => {
+                      setEditingLinks(editingLinks.map(l => 
+                        l.id === link.id ? { ...l, url: e.target.value } : l
+                      ));
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      fontSize: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      background: '#fff',
+                    }}
+                  />
+                  <button
+                    onClick={() => handleRemoveLink(link.id)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: '#bbb',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '0 4px',
+                      transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#c00'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#bbb'; }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add New Link */}
+            <div style={{ borderTop: '1px solid #eee', paddingTop: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <label style={{
+                  fontSize: '10px',
+                  fontWeight: 600,
+                  color: '#999',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}>
+                  Add New Link
+                </label>
+                <button
+                  onClick={() => setShowAddForm(!showAddForm)}
+                  style={{
+                    padding: '4px 10px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#fff',
+                    background: '#111',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    lineHeight: 1,
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#111';
+                  }}
+                >
+                  {showAddForm ? '−' : '+'}
+                </button>
+              </div>
+              {showAddForm && (
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                <select
+                  value={newLink.platform}
+                  onChange={(e) => setNewLink({ ...newLink, platform: e.target.value })}
+                  style={{
+                    padding: '8px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    minWidth: '100px',
+                    background: '#fafafa',
+                  }}
+                >
+                  <option value="x">X (Twitter)</option>
+                  <option value="instagram">Instagram</option>
+                  <option value="reddit">Reddit</option>
+                  <option value="youtube">YouTube</option>
+                  <option value="discord">Discord</option>
+                  <option value="email">Email</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Enter URL or email"
+                  value={newLink.url}
+                  onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') handleAddLink();
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '8px 10px',
+                    fontSize: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '8px',
+                    background: '#fafafa',
+                  }}
+                />
+                <button
+                  onClick={handleAddLink}
+                  style={{
+                    padding: '8px 14px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: '#fff',
+                    background: '#2e7d32',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#1b5e20';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#2e7d32';
+                  }}
+                >
+                  Save
+                </button>
+              </div>
+              )}
+            </div>
           </div>
         )}
       </div>

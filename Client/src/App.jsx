@@ -31,6 +31,7 @@ import {
   fetchBackgroundBlurriness,
   fetchBackgroundIntensity,
   fetchHdrFileUrl,
+  fetchSocialLinks,
   cleanupOrphanedImages,
 } from './firebaseFunctions';
 import {
@@ -372,6 +373,7 @@ function App() {
   const setBackgroundIntensity = useStore((state) => state.setBackgroundIntensity);
   const hdrFileUrl = useStore((state) => state.hdrFileUrl);
   const setHdrFileUrl = useStore((state) => state.setHdrFileUrl);
+  const setSocialLinks = useStore((state) => state.setSocialLinks);
   const uploadProgress = useStore((state) => state.uploadProgress);
   const setUploadProgress = useStore((state) => state.setUploadProgress);
   const visibleImageIndices = useStore((state) => state.visibleImageIndices);
@@ -455,6 +457,7 @@ function App() {
         backgroundBlurrinessData,
         backgroundIntensityData,
         hdrFileUrlData,
+        socialLinksData,
       ] = await Promise.all([
         fetchImages(),
         fetchColor(),
@@ -467,6 +470,7 @@ function App() {
         fetchBackgroundBlurriness(),
         fetchBackgroundIntensity(),
         fetchHdrFileUrl(),
+        fetchSocialLinks(),
       ]);
       setImages(imagesData);
       setBackgroundColor(backgroundColorData);
@@ -479,6 +483,8 @@ function App() {
       setBackgroundBlurriness(backgroundBlurrinessData);
       setBackgroundIntensity(backgroundIntensityData);
       setHdrFileUrl(hdrFileUrlData);
+      setSocialLinks(socialLinksData);
+      console.log('Loaded social links from Firebase:', socialLinksData);
     };
 
     fetchData();

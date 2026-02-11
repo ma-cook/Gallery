@@ -22,6 +22,7 @@ const useStore = create((set) => ({
   uploadProgress: 0,
   visibleImageIndices: [],
   imageComponentStates: {},
+  socialLinks: [],
 
   // Auth state (moved from App.jsx useState)
   user: null,
@@ -66,6 +67,7 @@ const useStore = create((set) => ({
   setIsCommissionVisible: (isVisible) => set({ isCommissionVisible: isVisible }),
   setIsRequestsVisible: (isVisible) => set({ isRequestsVisible: isVisible }),
   setIsProductsVisible: (isVisible) => set({ isProductsVisible: isVisible }),
+  setSocialLinks: (links) => set({ socialLinks: links }),
 
   // Actions for image component states
   ensureImageComponentState: (index) =>

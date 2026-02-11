@@ -375,6 +375,25 @@ export const fetchHdrFileUrl = async () => {
   }
 };
 
+// Social Links functions
+export const saveSocialLinks = async (links) => {
+  const db = getFirestore();
+  await setDoc(doc(db, 'settings', 'socialLinks'), {
+    links: links,
+  });
+};
+
+export const fetchSocialLinks = async () => {
+  const db = getFirestore();
+  const docRef = doc(db, 'settings', 'socialLinks');
+  const docSnap = await getDoc(docRef);
+  if (docSnap.exists()) {
+    return docSnap.data().links || [];
+  } else {
+    return [];
+  }
+};
+
 // Request functions
 export const createRequest = async (requestData, exampleImageFile = null) => {
   try {
