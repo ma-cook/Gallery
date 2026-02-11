@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchUserRequests, createRequest, checkUserHasRequests, updateRequestStatus, deleteRequest, getStripeProducts } from '../firebaseFunctions';
+import { fetchUserRequests, createRequest, checkUserHasRequests, updateRequestStatus, deleteRequest, getStripeProducts, markRequestAsPaid, getFullResDownloadUrl } from '../firebaseFunctions';
+import { handleSignIn } from '../utils/authFunctions';
+import AuthModal from './AuthModal';
 import PaymentModal from './PaymentModal';
 import ConfirmDialog from './ConfirmDialog';
 import AlertDialog from './AlertDialog';
@@ -32,10 +34,9 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
       loadRequests();
       loadProducts();
     } else if (isOpen && !user?.uid) {
-      // If not logged in, show form immediately
-      setShowForm(true);
+      // If not logged in, don't show form - show auth prompt instead
+      setShowForm(false);
       setLoading(false);
-      loadProducts();
     }
   }, [isOpen, user?.uid]);
 
@@ -77,10 +78,6 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
     try {
       const requestsData = await fetchUserRequests(user.uid);
       setRequests(requestsData);
-      // If no requests, show form by default
-      if (requestsData.length === 0) {
-        setShowForm(true);
-      }
     } catch (error) {
       console.error('Error loading requests:', error);
     } finally {
@@ -264,7 +261,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
             letterSpacing: '-0.3px',
           }}
         >
-          {showForm ? 'Request Artwork' : 'My Commissions'}
+          {showForm ? 'Request Artwork' : !user?.uid ? 'Commissions' : 'My Commissions'}
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {!showForm && user?.uid && (
@@ -549,7 +546,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                       overflow: 'hidden',
                       cursor: 'pointer',
                     }}
-                    onClick={() => setFullImageView(exampleImagePreview)}
+                    onClick={() => setFullImageView({ url: exampleImagePreview, isPaid: true })}
                   >
                     <img
                       src={exampleImagePreview}
@@ -668,6 +665,26 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
               )}
             </div>
           </form>
+        ) : !user?.uid ? (
+          /* Auth Prompt for non-logged-in users */
+          <div style={{ padding: '1rem 0' }}>
+            <p style={{
+              textAlign: 'center',
+              color: '#1a1a1a',
+              fontSize: '14px',
+              fontWeight: 500,
+              margin: '0 0 1.5rem 0',
+              lineHeight: '1.5',
+            }}>
+              Please sign in or create an account to create an artwork request.
+            </p>
+            <AuthModal
+              isOpen={true}
+              onSignIn={(email, password) => handleSignIn(email, password, () => {})}
+              mode="signin"
+              embedded={true}
+            />
+          </div>
         ) : (
           /* Requests List */
           <>
@@ -838,7 +855,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                               }}
-                              onClick={() => setFullImageView(request.exampleImageUrl)}
+                              onClick={() => setFullImageView({ url: request.exampleImageUrl, isPaid: true })}
                             >
                               <img
                                 src={request.exampleImageUrl}
@@ -883,7 +900,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                           </div>
                         )}
 
-                        {request.completedImageUrl && (
+                        {(request.completedPreviewUrl || request.completedImageUrl) && (
                           <div style={{ marginTop: '1rem' }}>
                             <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                               Completed Artwork Preview
@@ -898,38 +915,41 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                                 overflow: 'hidden',
                                 cursor: 'pointer',
                               }}
-                              onClick={() => setFullImageView(request.completedImageUrl)}
+                              onClick={() => setFullImageView({ url: request.completedPreviewUrl || request.completedImageUrl, isPaid: request.paymentStatus === 'paid' })}
                             >
                               <img
-                                src={request.completedImageUrl}
+                                src={request.completedPreviewUrl || request.completedImageUrl}
                                 alt="Completed artwork preview"
                                 style={{
                                   width: '100%',
                                   height: '100%',
                                   objectFit: 'cover',
-                                  filter: 'blur(8px)',
                                 }}
                               />
-                              <div
-                                style={{
-                                  position: 'absolute',
-                                  top: '50%',
-                                  left: '50%',
-                                  transform: 'translate(-50%, -50%)',
-                                  background: 'rgba(0, 0, 0, 0.7)',
-                                  color: '#fff',
-                                  padding: '0.5rem 0.75rem',
-                                  borderRadius: '3px',
-                                  fontSize: '11px',
-                                  fontWeight: 600,
-                                  pointerEvents: 'none',
-                                }}
-                              >
-                                Click to view
-                              </div>
+                              {request.paymentStatus !== 'paid' && (
+                                <div
+                                  style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: 'rgba(0, 0, 0, 0.7)',
+                                    color: '#fff',
+                                    padding: '0.5rem 0.75rem',
+                                    borderRadius: '3px',
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    pointerEvents: 'none',
+                                  }}
+                                >
+                                  Click to view
+                                </div>
+                              )}
                             </div>
                             <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
-                              Your artwork is ready! Click to preview.
+                              {request.paymentStatus === 'paid'
+                                ? 'Your full resolution artwork is ready!'
+                                : 'Your artwork is ready! Click to preview.'}
                             </p>
                             
                             {!request.paymentStatus || request.paymentStatus === 'pending' ? (
@@ -958,13 +978,28 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
                                   e.currentTarget.style.background = '#000';
                                 }}
                               >
-                                Pay ${request.price || 50} to Download Full Resolution
+                                Pay ${request.priceAmount} to Download Full Resolution
                               </button>
                             ) : (
                               <button
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
-                                  window.open(request.completedImageUrl, '_blank');
+                                  try {
+                                    const downloadUrl = await getFullResDownloadUrl(request.id);
+                                    const response = await fetch(downloadUrl);
+                                    const blob = await response.blob();
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = `${request.name || 'artwork'}-full-resolution.${blob.type.split('/')[1] || 'png'}`;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                  } catch (err) {
+                                    console.error('Download failed:', err);
+                                    alert('Failed to download. Please try again.');
+                                  }
                                 }}
                                 style={{
                                   marginTop: '0.75rem',
@@ -1019,36 +1054,37 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
           onClick={() => setFullImageView(null)}
         >
           <img
-            src={fullImageView}
+            src={fullImageView.url}
             alt="Full view"
             style={{
               maxWidth: '90%',
               maxHeight: '90%',
               objectFit: 'contain',
-              filter: 'blur(10px)',
             }}
           />
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: 'rgba(0, 0, 0, 0.8)',
-              color: '#fff',
-              padding: '1.5rem 2rem',
-              borderRadius: '4px',
-              fontSize: '14px',
-              fontWeight: 600,
-              pointerEvents: 'none',
-              textAlign: 'center',
-            }}
-          >
-            Preview Only<br />
-            <span style={{ fontSize: '12px', fontWeight: 400, opacity: 0.9 }}>
-              Full resolution available on request
-            </span>
-          </div>
+          {!fullImageView.isPaid && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                background: 'rgba(0, 0, 0, 0.8)',
+                color: '#fff',
+                padding: '1.5rem 2rem',
+                borderRadius: '4px',
+                fontSize: '14px',
+                fontWeight: 600,
+                pointerEvents: 'none',
+                textAlign: 'center',
+              }}
+            >
+              Preview Only<br />
+              <span style={{ fontSize: '12px', fontWeight: 400, opacity: 0.9 }}>
+                Full resolution available on request
+              </span>
+            </div>
+          )}
           <button
             onClick={() => setFullImageView(null)}
             style={{
@@ -1076,8 +1112,19 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         onClose={() => {
           setPaymentModalOpen(false);
           setSelectedRequest(null);
-          if (user?.uid) {
-            loadRequests(); // Reload requests to update payment status
+        }}
+        onPaymentComplete={async (requestId) => {
+          // Update local state immediately - mark as paid
+          setRequests(prev => prev.map(req =>
+            req.id === requestId ? { ...req, paymentStatus: 'paid' } : req
+          ));
+          // Also persist to Firestore so it survives modal close/reopen
+          try {
+            if (user?.uid) {
+              await markRequestAsPaid(user.uid, requestId);
+            }
+          } catch (err) {
+            console.error('Error persisting payment status:', err);
           }
         }}
         request={selectedRequest}

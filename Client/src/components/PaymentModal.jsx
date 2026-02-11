@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   EmbeddedCheckoutProvider,
@@ -9,14 +9,20 @@ import { createCheckoutSession } from '../firebaseFunctions';
 // TODO: Replace with your actual Stripe publishable key
 const stripePromise = loadStripe('pk_test_51SwX2LPw6BfSGHAIQe4EH2cyMuWfdJj1StmTtEICe9fXa59ID0rEJBE4H2pIUilCHALcXzzrEJjxT7UTurp5LVZ300DB86wmLs');
 
-const PaymentModal = ({ isOpen, onClose, request, userId }) => {
+const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) => {
   const [clientSecret, setClientSecret] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   useEffect(() => {
     if (isOpen && request) {
+      setPaymentSuccess(false);
       initializeCheckout();
+    }
+    if (!isOpen) {
+      setClientSecret('');
+      setPaymentSuccess(false);
     }
   }, [isOpen, request]);
 
@@ -49,6 +55,13 @@ const PaymentModal = ({ isOpen, onClose, request, userId }) => {
     }
   };
 
+  const handleComplete = useCallback(() => {
+    setPaymentSuccess(true);
+    if (onPaymentComplete && request) {
+      onPaymentComplete(request.id);
+    }
+  }, [onPaymentComplete, request]);
+
   if (!isOpen) return null;
 
   return (
@@ -66,7 +79,7 @@ const PaymentModal = ({ isOpen, onClose, request, userId }) => {
         zIndex: 1002,
         padding: '1rem',
       }}
-      onClick={onClose}
+      onClick={paymentSuccess ? undefined : onClose}
     >
       <div
         style={{
@@ -95,10 +108,10 @@ const PaymentModal = ({ isOpen, onClose, request, userId }) => {
               margin: 0,
               fontSize: '18px',
               fontWeight: 600,
-              color: '#1a1a1a',
+              color: paymentSuccess ? '#388e3c' : '#1a1a1a',
             }}
           >
-            Complete Payment
+            {paymentSuccess ? 'Payment Successful' : 'Complete Payment'}
           </h2>
           <button
             onClick={onClose}
@@ -124,7 +137,39 @@ const PaymentModal = ({ isOpen, onClose, request, userId }) => {
         </div>
 
         <div style={{ padding: '1.5rem', maxHeight: 'calc(90vh - 100px)', overflowY: 'auto' }}>
-          {loading ? (
+          {paymentSuccess ? (
+            <div style={{ textAlign: 'center', padding: '2rem' }}>
+              <div style={{ fontSize: '48px', marginBottom: '1rem' }}>&#10003;</div>
+              <p style={{ fontSize: '15px', fontWeight: 600, color: '#388e3c', marginBottom: '0.5rem' }}>
+                Payment successfully completed!
+              </p>
+              <p style={{ fontSize: '13px', color: '#666', marginBottom: '1.5rem' }}>
+                Your full resolution artwork is now available for download.
+              </p>
+              <button
+                onClick={onClose}
+                style={{
+                  padding: '0.6rem 1.5rem',
+                  background: '#000',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#333';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#000';
+                }}
+              >
+                Close
+              </button>
+            </div>
+          ) : loading ? (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
               <p>Initializing secure payment...</p>
             </div>
@@ -151,7 +196,7 @@ const PaymentModal = ({ isOpen, onClose, request, userId }) => {
             <div id="checkout">
               <EmbeddedCheckoutProvider
                 stripe={stripePromise}
-                options={{ clientSecret }}
+                options={{ clientSecret, onComplete: handleComplete }}
               >
                 <EmbeddedCheckout />
               </EmbeddedCheckoutProvider>

@@ -442,6 +442,19 @@ export const updateRequestStatus = async (userId, requestId, status) => {
   }
 };
 
+export const markRequestAsPaid = async (userId, requestId) => {
+  try {
+    const requestRef = doc(db, 'users', userId, 'requests', requestId);
+    await updateDoc(requestRef, {
+      paymentStatus: 'paid',
+      paidAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error marking request as paid:', error);
+    throw error;
+  }
+};
+
 export const deleteRequest = async (userId, requestId) => {
   try {
     const requestRef = doc(db, 'users', userId, 'requests', requestId);
@@ -481,39 +494,80 @@ export const checkUserHasRequests = async (userId) => {
   }
 };
 
+// Generate a low-res preview blob from an image file using canvas
+const generatePreviewBlob = (file, maxSize = 400, quality = 0.4) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      try {
+        const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+        const width = Math.round(img.width * scale);
+        const height = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(url);
+            if (blob) resolve(blob);
+            else reject(new Error('Canvas toBlob returned null'));
+          },
+          'image/webp',
+          quality
+        );
+      } catch (err) {
+        URL.revokeObjectURL(url);
+        reject(err);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load image for preview generation'));
+    };
+    img.src = url;
+  });
+};
+
 // Upload completed request image to collection
 export const uploadCompletedRequestImage = async (userId, requestId, file, requestData) => {
   try {
     const storage = getStorage();
     const timestamp = Date.now();
-    const storageRef = ref(storage, `collection/${userId}/${timestamp}_${file.name}`);
-    
-    // Upload the file
-    const uploadTask = await uploadBytesResumable(storageRef, file);
-    const downloadURL = await getDownloadURL(uploadTask.ref);
-    
-    // Create the collection document
-    const collectionDoc = {
-      url: downloadURL,
-      name: file.name,
-      uploadedAt: serverTimestamp(),
-      requestId: requestId,
-      requestName: requestData.name || '',
-      requestDescription: requestData.description || '',
-    };
-    
-    // Add to users/{userId}/collection
-    await addDoc(collection(db, 'users', userId, 'collection'), collectionDoc);
-    
-    // Update request status to completed and add the image URL
+    const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
+
+    // 1. Upload full-res to protected path (not publicly readable)
+    const storagePath = `collection_fullres/${userId}/${timestamp}_${file.name}`;
+    const storageRef = ref(storage, storagePath);
+    await uploadBytesResumable(storageRef, file);
+
+    // 2. Generate and upload a low-res preview (publicly readable)
+    let completedPreviewUrl = '';
+    try {
+      const previewBlob = await generatePreviewBlob(file);
+      const previewPath = `collection_previews/${userId}/${fileNameWithoutExt}_${timestamp}_preview.webp`;
+      const previewRef = ref(storage, previewPath);
+      await uploadBytesResumable(previewRef, previewBlob, { contentType: 'image/webp' });
+      completedPreviewUrl = await getDownloadURL(previewRef);
+    } catch (previewErr) {
+      console.warn('Preview generation failed, cloud function will handle it:', previewErr);
+    }
+
+    // 3. Update Firestore with status, paths, and preview URL
     const requestRef = doc(db, 'users', userId, 'requests', requestId);
-    await updateDoc(requestRef, { 
+    const updateData = {
       status: 'completed',
-      completedImageUrl: downloadURL,
+      completedImagePath: storagePath,
       completedAt: serverTimestamp()
-    });
+    };
+    if (completedPreviewUrl) {
+      updateData.completedPreviewUrl = completedPreviewUrl;
+    }
+    await updateDoc(requestRef, updateData);
     
-    return downloadURL;
+    return storagePath;
   } catch (error) {
     console.error('Error uploading completed request image:', error);
     throw error;
@@ -542,6 +596,45 @@ export const getStripeProducts = async () => {
     return result.data.products;
   } catch (error) {
     console.error('Error fetching Stripe products:', error);
+    throw error;
+  }
+};
+
+// Create a new Stripe product (Admin only)
+export const createStripeProduct = async (productData) => {
+  try {
+    const functions = getFunctions();
+    const createProduct = httpsCallable(functions, 'createStripeProduct');
+    const result = await createProduct(productData);
+    return result.data;
+  } catch (error) {
+    console.error('Error creating Stripe product:', error);
+    throw error;
+  }
+};
+
+// Delete a Stripe product (Admin only)
+export const deleteStripeProduct = async (productId) => {
+  try {
+    const functions = getFunctions();
+    const deleteProduct = httpsCallable(functions, 'deleteStripeProduct');
+    const result = await deleteProduct({ productId });
+    return result.data;
+  } catch (error) {
+    console.error('Error deleting Stripe product:', error);
+    throw error;
+  }
+};
+
+// Get a signed download URL for full-resolution completed artwork (requires payment)
+export const getFullResDownloadUrl = async (requestId) => {
+  try {
+    const functions = getFunctions();
+    const getUrl = httpsCallable(functions, 'getFullResDownloadUrl');
+    const result = await getUrl({ requestId });
+    return result.data.downloadUrl;
+  } catch (error) {
+    console.error('Error getting full-res download URL:', error);
     throw error;
   }
 };

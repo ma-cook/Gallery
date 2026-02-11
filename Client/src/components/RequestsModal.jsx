@@ -63,10 +63,11 @@ const RequestsModal = ({ isOpen, onClose }) => {
 
     setUploading(prev => ({ ...prev, [requestId]: true }));
     try {
-      await uploadCompletedRequestImage(userId, requestId, imageData.file, request);
-      // Update local state
+      const result = await uploadCompletedRequestImage(userId, requestId, imageData.file, request);
+      // Update local state - use the local preview URL so the image shows immediately
+      const localPreviewUrl = imageData.previewUrl;
       setRequests(requests.map(req => 
-        req.id === requestId ? { ...req, status: 'completed' } : req
+        req.id === requestId ? { ...req, status: 'completed', completedPreviewUrl: localPreviewUrl } : req
       ));
       // Clear uploaded image from state
       setUploadedImages(prev => {
@@ -364,6 +365,41 @@ const RequestsModal = ({ isOpen, onClose }) => {
                       </select>
                     </div>
 
+                    {request.completedPreviewUrl && (
+                      <div style={{ marginTop: '1rem' }}>
+                        <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                          Completed Artwork
+                        </label>
+                        <div
+                          style={{
+                            position: 'relative',
+                            width: '120px',
+                            height: '120px',
+                            border: '1px solid rgba(0, 0, 0, 0.2)',
+                            borderRadius: '3px',
+                            overflow: 'hidden',
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => setFullImageView(request.completedPreviewUrl)}
+                        >
+                          <img
+                            src={request.completedPreviewUrl}
+                            alt="Completed artwork"
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        </div>
+                        <p style={{ margin: '0.5rem 0 0 0', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+                          {request.paymentStatus === 'paid' ? 'Payment received' : 'Awaiting payment'}
+                        </p>
+                      </div>
+                    )}
+
+                    {!request.completedPreviewUrl && request.status !== 'completed' && (
+                    <>
                     <div style={{ marginTop: '1rem' }}>
                       <label style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#555', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Upload Completed Artwork
@@ -478,6 +514,8 @@ const RequestsModal = ({ isOpen, onClose }) => {
                         {uploading[request.id] ? 'Uploading...' : 'Mark as Completed'}
                       </button>
                     </div>
+                    </>
+                    )}
                   </div>
                 )}
               </div>

@@ -8,7 +8,20 @@ service firebase.storage {
       allow write: if request.auth != null;
     }
     
-    // Allow public read access to collection images
+    // Allow public read access to collection preview images  
+    match /collection_previews/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Full-res completed artwork - no public read access
+    // Only accessible via signed URLs from cloud functions
+    match /collection_fullres/{allPaths=**} {
+      allow read: if false;
+      allow write: if request.auth != null;
+    }
+    
+    // Legacy collection path - allow public read for existing images
     match /collection/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null;

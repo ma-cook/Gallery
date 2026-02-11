@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AuthModal from './AuthModal';
 import RequestsModal from './RequestsModal';
 import CommissionModal from './CommissionModal';
+import ProductsManagementModal from './ProductsManagementModal';
 import { signOutUser } from '../Auth';
 import { handleSignIn } from '../utils/authFunctions';
 import useStore from '../store';
@@ -26,6 +27,8 @@ const UIOverlay = ({
   const setIsCommissionVisible = useStore((state) => state.setIsCommissionVisible);
   const isRequestsVisible = useStore((state) => state.isRequestsVisible);
   const setIsRequestsVisible = useStore((state) => state.setIsRequestsVisible);
+  const isProductsVisible = useStore((state) => state.isProductsVisible);
+  const setIsProductsVisible = useStore((state) => state.setIsProductsVisible);
 
   // Keep ephemeral form state local (resets on unmount, no need for global)
   const [authMode, setAuthMode] = useState('signin');
@@ -84,7 +87,13 @@ const UIOverlay = ({
                 textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
                 marginLeft: '40px',
               }}
-              onClick={() => setIsSettingsModalOpen(true)}
+              onClick={() => {
+                setIsSettingsModalOpen(true);
+                setIsRequestsVisible(false);
+                setIsProductsVisible(false);
+                setIsCommissionVisible(false);
+                setIsAuthModalOpen(false);
+              }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.textDecoration = 'underline';
               }}
@@ -102,7 +111,12 @@ const UIOverlay = ({
                 textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
                 marginLeft: '40px',
               }}
-              onClick={() => setIsRequestsVisible(true)}
+              onClick={() => {
+                setIsRequestsVisible(true);
+                setIsProductsVisible(false);
+                setIsCommissionVisible(false);
+                setIsAuthModalOpen(false);
+              }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.textDecoration = 'underline';
               }}
@@ -111,6 +125,29 @@ const UIOverlay = ({
               }}
             >
               requests
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                marginLeft: '40px',
+              }}
+              onClick={() => {
+                setIsProductsVisible(true);
+                setIsRequestsVisible(false);
+                setIsCommissionVisible(false);
+                setIsAuthModalOpen(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              products
             </span>
           </>
         )}
@@ -176,23 +213,6 @@ const UIOverlay = ({
           alignItems: 'center',
         }}
           >
-      
-        <span
-          style={{
-            color: textColor,
-            fontSize: '12px',
-            cursor: 'pointer',
-            textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.textDecoration = 'underline';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.textDecoration = 'none';
-          }}
-        >
-          about
-        </span>
         <span
           style={{
             color: textColor,
@@ -201,7 +221,12 @@ const UIOverlay = ({
             textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
             marginLeft: '40px',
           }}
-          onClick={() => setIsCommissionVisible(true)}
+          onClick={() => {
+            setIsCommissionVisible(true);
+            setIsRequestsVisible(false);
+            setIsProductsVisible(false);
+            setIsAuthModalOpen(false);
+          }}
           onMouseEnter={(e) => {
             e.currentTarget.style.textDecoration = 'underline';
           }}
@@ -209,25 +234,9 @@ const UIOverlay = ({
             e.currentTarget.style.textDecoration = 'none';
           }}
               >
-                commission
+                Commission
               </span>
-                  <span
-          style={{
-            color: textColor,
-            fontSize: '12px',
-            cursor: 'pointer',
-            textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-            marginLeft: '40px',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.textDecoration = 'underline';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.textDecoration = 'none';
-          }}
-              >
-                Collection
-        </span>
+        
         {user ? (
           <span
             style={{
@@ -245,7 +254,7 @@ const UIOverlay = ({
               e.currentTarget.style.textDecoration = 'none';
             }}
           >
-            sign out
+            Sign out
           </span>
         ) : (
           <>
@@ -260,6 +269,9 @@ const UIOverlay = ({
               onClick={() => {
                 setAuthMode('signin');
                 setIsAuthModalOpen(true);
+                setIsRequestsVisible(false);
+                setIsProductsVisible(false);
+                setIsCommissionVisible(false);
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.textDecoration = 'underline';
@@ -289,6 +301,9 @@ const UIOverlay = ({
               onClick={() => {
                 setAuthMode('createaccount');
                 setIsAuthModalOpen(true);
+                setIsRequestsVisible(false);
+                setIsProductsVisible(false);
+                setIsCommissionVisible(false);
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.textDecoration = 'underline';
@@ -374,6 +389,12 @@ const UIOverlay = ({
       <RequestsModal
         isOpen={isRequestsVisible}
         onClose={() => setIsRequestsVisible(false)}
+      />
+
+      {/* Products Management Modal (Admin only) */}
+      <ProductsManagementModal
+        isOpen={isProductsVisible}
+        onClose={() => setIsProductsVisible(false)}
       />
 
       {/* Commission Modal (combines request list and form) */}

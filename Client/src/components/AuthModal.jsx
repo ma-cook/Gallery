@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 
-function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
+function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = false }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const auth = getAuth();
@@ -17,7 +17,7 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      onClose();
+      if (onClose) onClose();
     } catch (error) {
       console.error('Google sign-in error:', error);
     }
@@ -28,62 +28,8 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
   const isSignIn = mode === 'signin';
   const title = isSignIn ? 'Sign In' : 'Create Account';
 
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '22rem',
-        maxWidth: '90vw',
-        background: 'rgba(255, 255, 255, 0.97)',
-        border: '1px solid rgba(0, 0, 0, 0.15)',
-        borderRadius: '4px',
-        padding: '1.5rem',
-        zIndex: 1000,
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2
-          style={{
-            margin: 0,
-            color: '#1a1a1a',
-            fontSize: '18px',
-            fontWeight: 600,
-            letterSpacing: '-0.3px',
-          }}
-        >
-          {title}
-        </h2>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            fontSize: '24px',
-            cursor: 'pointer',
-            color: '#666',
-            lineHeight: 1,
-            padding: 0,
-            width: '24px',
-            height: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#000';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#666';
-          }}
-        >
-          ×
-        </button>
-      </div>
-      
+  const content = (
+    <>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
           <label style={{ color: '#555', fontSize: '12px', fontWeight: 600 }}>Email</label>
@@ -211,6 +157,69 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin' }) {
         </svg>
         Continue with Google
       </button>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '22rem',
+        maxWidth: '90vw',
+        background: 'rgba(255, 255, 255, 0.97)',
+        border: '1px solid rgba(0, 0, 0, 0.15)',
+        borderRadius: '4px',
+        padding: '1.5rem',
+        zIndex: 1000,
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h2
+          style={{
+            margin: 0,
+            color: '#1a1a1a',
+            fontSize: '18px',
+            fontWeight: 600,
+            letterSpacing: '-0.3px',
+          }}
+        >
+          {title}
+        </h2>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            fontSize: '24px',
+            cursor: 'pointer',
+            color: '#666',
+            lineHeight: 1,
+            padding: 0,
+            width: '24px',
+            height: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#000';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = '#666';
+          }}
+        >
+          ×
+        </button>
+      </div>
+      {content}
     </div>
   );
 }

@@ -31,6 +31,7 @@ const useStore = create((set) => ({
   isAuthModalOpen: false,
   isCommissionVisible: false,
   isRequestsVisible: false,
+  isProductsVisible: false,
 
   // Actions
   setImages: (updater) =>
@@ -64,6 +65,7 @@ const useStore = create((set) => ({
   setIsAuthModalOpen: (isOpen) => set({ isAuthModalOpen: isOpen }),
   setIsCommissionVisible: (isVisible) => set({ isCommissionVisible: isVisible }),
   setIsRequestsVisible: (isVisible) => set({ isRequestsVisible: isVisible }),
+  setIsProductsVisible: (isVisible) => set({ isProductsVisible: isVisible }),
 
   // Actions for image component states
   ensureImageComponentState: (index) =>
