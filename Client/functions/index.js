@@ -489,3 +489,107 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
 
   res.json({ received: true });
 });
+
+/**
+ * Send email notification when a request is marked as completed
+ * This works with Firebase Email Extension (Trigger Email)
+ * When a request status changes to 'completed', a document is written to the 'mail' collection
+ */
+exports.sendCompletionEmail = functions.firestore
+  .document('users/{userId}/requests/{requestId}')
+  .onUpdate(async (change, context) => {
+    const beforeData = change.before.data();
+    const afterData = change.after.data();
+    const { userId, requestId } = context.params;
+
+    // Only proceed if status just changed to 'completed'
+    if (beforeData.status === 'completed' || afterData.status !== 'completed') {
+      return null;
+    }
+
+    // Only send if user has an email
+    const userEmail = afterData.email;
+    if (!userEmail) {
+      console.log('No email found for request, skipping notification');
+      return null;
+    }
+
+    try {
+      // Get the preview URL if available
+      const previewUrl = afterData.completedPreviewUrl || '';
+      const productName = afterData.productName || 'your commissioned artwork';
+      const userName = afterData.name || 'there';
+
+      // Create email document for Firebase Email Extension
+      await admin.firestore().collection('mail').add({
+        to: userEmail,
+        message: {
+          subject: 'Your Artwork is Ready! 🎨',
+          html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+    <div style="background: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <!-- Header -->
+      <div style="text-align: center; margin-bottom: 32px;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700; color: #111;">Your Artwork is Complete!</h1>
+      </div>
+      
+      <!-- Body -->
+      <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #444;">
+        Hi ${userName},
+      </p>
+      <p style="margin: 0 0 16px 0; font-size: 15px; line-height: 1.6; color: #444;">
+        Great news! <strong>${productName}</strong> has been completed and is ready for you to view.
+      </p>
+      
+      ${previewUrl ? `
+      <!-- Preview Image -->
+      <div style="margin: 24px 0; text-align: center;">
+        <img src="${previewUrl}" alt="Artwork Preview" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #eee;" />
+        <p style="margin: 8px 0 0 0; font-size: 12px; color: #999;">Preview (low resolution)</p>
+      </div>
+      ` : ''}
+      
+      <p style="margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #444;">
+        To download the full-resolution version, simply visit our website and complete the payment for your commission.
+      </p>
+      
+      <!-- CTA Button -->
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="${process.env.SITE_URL || 'https://your-gallery-site.web.app'}" style="display: inline-block; padding: 14px 32px; background: #111; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+          View Your Artwork
+        </a>
+      </div>
+      
+      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #666;">
+        Thank you for your commission! If you have any questions, feel free to reach out to us.
+      </p>
+      
+      <!-- Footer -->
+      <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #eee; text-align: center;">
+        <p style="margin: 0; font-size: 12px; color: #999;">
+          This email was sent regarding your commission request (ID: ${requestId})
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+          `,
+          text: `Hi ${userName},\n\nGreat news! ${productName} has been completed and is ready for you to view.\n\nTo download the full-resolution version, visit our website and complete the payment for your commission.\n\nThank you for your commission!\n\nRequest ID: ${requestId}`,
+        },
+      });
+
+      console.log(`Completion email queued for ${userEmail} (request: ${requestId})`);
+      return null;
+    } catch (error) {
+      console.error('Error sending completion email:', error);
+      return null;
+    }
+  });

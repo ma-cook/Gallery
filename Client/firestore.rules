@@ -14,6 +14,12 @@ service cloud.firestore {
       allow write: if true;
     }
     
+    // Mail collection - used by Firebase Email Extension
+    // Only Cloud Functions (Admin SDK) can write; clients cannot access
+    match /mail/{mailId} {
+      allow read, write: if false;
+    }
+    
     // Collection group query support for admins to fetch all requests
     match /{path=**}/requests/{requestId} {
       // Allow admins to read all requests via collectionGroup query

@@ -14,6 +14,17 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile/tablet screen sizes
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isOpen && request) {
@@ -77,7 +88,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1002,
-        padding: '1rem',
+        padding: isMobile ? '0.5rem' : '1rem',
       }}
       onClick={paymentSuccess ? undefined : onClose}
     >
@@ -85,10 +96,10 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: '500px',
-          maxHeight: '90vh',
+          maxWidth: isMobile ? '95vw' : '500px',
+          maxHeight: isMobile ? '92vh' : '90vh',
           background: '#fff',
-          borderRadius: '8px',
+          borderRadius: isMobile ? '10px' : '8px',
           overflow: 'hidden',
           boxShadow: '0 4px 24px rgba(0, 0, 0, 0.2)',
         }}
@@ -96,7 +107,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
       >
         <div
           style={{
-            padding: '1.5rem',
+            padding: isMobile ? '1.2rem' : '1.5rem',
             borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
             display: 'flex',
             justifyContent: 'space-between',
@@ -106,7 +117,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
           <h2
             style={{
               margin: 0,
-              fontSize: '18px',
+              fontSize: isMobile ? '16px' : '18px',
               fontWeight: 600,
               color: paymentSuccess ? '#388e3c' : '#1a1a1a',
             }}
@@ -118,7 +129,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
             style={{
               background: 'transparent',
               border: 'none',
-              fontSize: '24px',
+              fontSize: isMobile ? '28px' : '24px',
               cursor: 'pointer',
               color: '#666',
               lineHeight: 1,
@@ -136,7 +147,7 @@ const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) =
           </button>
         </div>
 
-        <div style={{ padding: '1.5rem', maxHeight: 'calc(90vh - 100px)', overflowY: 'auto' }}>
+        <div style={{ padding: isMobile ? '1.2rem' : '1.5rem', maxHeight: isMobile ? 'calc(92vh - 100px)' : 'calc(90vh - 100px)', overflowY: 'auto' }}>
           {paymentSuccess ? (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <div style={{ fontSize: '48px', marginBottom: '1rem' }}>&#10003;</div>

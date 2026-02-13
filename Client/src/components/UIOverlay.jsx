@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AuthModal from './AuthModal';
 import RequestsModal from './RequestsModal';
 import CommissionModal from './CommissionModal';
 import ProductsManagementModal from './ProductsManagementModal';
+import LegalModal from './LegalModal';
 import { signOutUser } from '../Auth';
 import { handleSignIn } from '../utils/authFunctions';
 import useStore from '../store';
@@ -33,6 +34,19 @@ const UIOverlay = ({
 
   // Keep ephemeral form state local (resets on unmount, no need for global)
   const [authMode, setAuthMode] = useState('signin');
+  const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  
+  // Detect mobile/tablet screen sizes
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const getSocialIcon = (platform) => {
     const iconProps = { width: "20", height: "20", fill: textColor, style: { filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))' } };
@@ -93,45 +107,76 @@ const UIOverlay = ({
         multiple
       />
 
-      {/* Top left - Upload and Settings buttons (Admin only) */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '37px',
-          left: '40px',
-          display: 'flex',
-          flexDirection: 'row',
-          gap: '8px',
-          zIndex: 1000,
-          alignItems: 'center',
-        }}
-      >
-        {isAdmin && (
-          <>
+      {/* Mobile Hamburger Menu (Admin only) */}
+      {isMobile && isAdmin && (
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            background: 'rgba(0, 0, 0, 0.6)',
+            border: 'none',
+            borderRadius: '8px',
+            padding: '12px',
+            cursor: 'pointer',
+            zIndex: 1002,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            transition: 'background 0.2s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.8)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(0, 0, 0, 0.6)'; }}
+        >
+          <div style={{ width: '24px', height: '2px', background: textColor, borderRadius: '2px' }} />
+          <div style={{ width: '24px', height: '2px', background: textColor, borderRadius: '2px' }} />
+          <div style={{ width: '24px', height: '2px', background: textColor, borderRadius: '2px' }} />
+        </button>
+      )}
+
+      {/* Mobile Menu Dropdown */}
+      {isMobile && isAdmin && isMobileMenuOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '70px',
+            left: '20px',
+            background: 'rgba(0, 0, 0, 0.9)',
+            borderRadius: '12px',
+            padding: '12px',
+            zIndex: 1002,
+            minWidth: '160px',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <span
               style={{
                 color: textColor,
-                fontSize: '12px',
+                fontSize: '14px',
                 cursor: 'pointer',
-                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                transition: 'background 0.2s',
               }}
-              onClick={() => document.getElementById('fileInput').click()}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'underline';
+              onClick={() => {
+                document.getElementById('fileInput').click();
+                setIsMobileMenuOpen(false);
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              upload
+              Upload
             </span>
             <span
               style={{
                 color: textColor,
-                fontSize: '12px',
+                fontSize: '14px',
                 cursor: 'pointer',
-                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-                marginLeft: '40px',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                transition: 'background 0.2s',
               }}
               onClick={() => {
                 setIsSettingsModalOpen(true);
@@ -139,65 +184,166 @@ const UIOverlay = ({
                 setIsProductsVisible(false);
                 setIsCommissionVisible(false);
                 setIsAuthModalOpen(false);
+                setIsMobileMenuOpen(false);
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'underline';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              settings
+              Settings
             </span>
             <span
               style={{
                 color: textColor,
-                fontSize: '12px',
+                fontSize: '14px',
                 cursor: 'pointer',
-                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-                marginLeft: '40px',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                transition: 'background 0.2s',
               }}
               onClick={() => {
                 setIsRequestsVisible(true);
                 setIsProductsVisible(false);
                 setIsCommissionVisible(false);
                 setIsAuthModalOpen(false);
+                setIsMobileMenuOpen(false);
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'underline';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              requests
+              Requests
             </span>
             <span
               style={{
                 color: textColor,
-                fontSize: '12px',
+                fontSize: '14px',
                 cursor: 'pointer',
-                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-                marginLeft: '40px',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                transition: 'background 0.2s',
               }}
               onClick={() => {
                 setIsProductsVisible(true);
                 setIsRequestsVisible(false);
                 setIsCommissionVisible(false);
                 setIsAuthModalOpen(false);
+                setIsMobileMenuOpen(false);
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'underline';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
             >
-              products
+              Products
             </span>
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop Top left - Upload and Settings buttons (Admin only) */}
+      {!isMobile && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '37px',
+            left: '40px',
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '8px',
+            zIndex: 1000,
+            alignItems: 'center',
+          }}
+        >
+          {isAdmin && (
+            <>
+              <span
+                style={{
+                  color: textColor,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                }}
+                onClick={() => document.getElementById('fileInput').click()}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                }}
+              >
+                upload
+              </span>
+              <span
+                style={{
+                  color: textColor,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                  marginLeft: '40px',
+                }}
+                onClick={() => {
+                  setIsSettingsModalOpen(true);
+                  setIsRequestsVisible(false);
+                  setIsProductsVisible(false);
+                  setIsCommissionVisible(false);
+                  setIsAuthModalOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                }}
+              >
+                settings
+              </span>
+              <span
+                style={{
+                  color: textColor,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                  marginLeft: '40px',
+                }}
+                onClick={() => {
+                  setIsRequestsVisible(true);
+                  setIsProductsVisible(false);
+                  setIsCommissionVisible(false);
+                  setIsAuthModalOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                }}
+              >
+                requests
+              </span>
+              <span
+                style={{
+                  color: textColor,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                  marginLeft: '40px',
+                }}
+                onClick={() => {
+                  setIsProductsVisible(true);
+                  setIsRequestsVisible(false);
+                  setIsCommissionVisible(false);
+                  setIsAuthModalOpen(false);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.textDecoration = 'underline';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.textDecoration = 'none';
+                }}
+              >
+                products
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Upload progress indicator */}
       {uploadProgress > 0 && (
@@ -224,21 +370,23 @@ const UIOverlay = ({
       <div
         style={{
           position: 'absolute',
-          top: '20px',
+          top: isMobile ? '15px' : '20px',
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1000,
           pointerEvents: 'none',
+          textAlign: 'center',
+          width: isMobile ? '80%' : 'auto',
         }}
       >
         <h1
           style={{
             margin: 0,
-            fontSize: '64px',
+            fontSize: isMobile ? '36px' : '64px',
             fontFamily: "'Great Vibes', 'Tangerine', cursive",
             color: titleColor,
             textShadow: '2px 2px 8px rgba(0, 0, 0, 0.7)',
-            letterSpacing: '3px',
+            letterSpacing: isMobile ? '1px' : '3px',
             fontWeight: 400,
           }}
         >
@@ -250,22 +398,25 @@ const UIOverlay = ({
       <div
         style={{
           position: 'absolute',
-          top: '37px',
-          right: '190px',
+          top: isMobile ? '70px' : '37px',
+          right: isMobile ? '20px' : '190px',
           display: 'flex',
-          flexDirection: 'row',
-          gap: '8px',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '12px' : '8px',
           zIndex: 1000,
-          alignItems: 'center',
+          alignItems: isMobile ? 'flex-end' : 'center',
+          background: isMobile ? 'rgba(0, 0, 0, 0.6)' : 'transparent',
+          padding: isMobile ? '12px' : '0',
+          borderRadius: isMobile ? '8px' : '0',
         }}
           >
         <span
           style={{
             color: textColor,
-            fontSize: '12px',
+            fontSize: isMobile ? '14px' : '12px',
             cursor: 'pointer',
             textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-            marginLeft: '40px',
+            marginLeft: isMobile ? '0' : '40px',
           }}
           onClick={() => {
             setIsCommissionVisible(true);
@@ -287,10 +438,10 @@ const UIOverlay = ({
           <span
             style={{
               color: textColor,
-              fontSize: '12px',
+              fontSize: isMobile ? '14px' : '12px',
               cursor: 'pointer',
               textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-              marginLeft: '40px',
+              marginLeft: isMobile ? '0' : '40px',
             }}
             onClick={signOutUser}
             onMouseEnter={(e) => {
@@ -307,10 +458,10 @@ const UIOverlay = ({
             <span
               style={{
                 color: textColor,
-                fontSize: '12px',
+                fontSize: isMobile ? '14px' : '12px',
                 cursor: 'pointer',
                 textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-                marginLeft: '40px',
+                marginLeft: isMobile ? '0' : '40px',
               }}
               onClick={() => {
                 setAuthMode('signin');
@@ -328,19 +479,21 @@ const UIOverlay = ({
             >
               sign in
             </span>
+            {!isMobile && (
+              <span
+                style={{
+                  color: textColor,
+                  fontSize: '12px',
+                  textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                }}
+              >
+                |
+              </span>
+            )}
             <span
               style={{
                 color: textColor,
-                fontSize: '12px',
-                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-              }}
-            >
-              |
-            </span>
-            <span
-              style={{
-                color: textColor,
-                fontSize: '12px',
+                fontSize: isMobile ? '14px' : '12px',
                 cursor: 'pointer',
                 textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
               }}
@@ -368,18 +521,18 @@ const UIOverlay = ({
       <div
         style={{
           position: 'absolute',
-          top: '20px',
+          top: isMobile ? (user || !isAdmin ? '170px' : '20px') : '20px',
           right: '20px',
           display: 'flex',
-          gap: '10px',
+          gap: isMobile ? '8px' : '10px',
           zIndex: 1000,
         }}
       >
         <button
           onClick={() => triggerTransition('plane')}
           style={{
-            width: '50px',
-            height: '50px',
+            width: isMobile ? '44px' : '50px',
+            height: isMobile ? '44px' : '50px',
             background: buttonSecondaryColor,
             border: `2px solid ${buttonPrimaryColor}`,
             borderRadius: '8px',
@@ -398,15 +551,15 @@ const UIOverlay = ({
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={buttonPrimaryColor} strokeWidth="2">
+          <svg width={isMobile ? '20' : '24'} height={isMobile ? '20' : '24'} viewBox="0 0 24 24" fill="none" stroke={buttonPrimaryColor} strokeWidth="2">
             <rect x="3" y="3" width="18" height="18" />
           </svg>
         </button>
         <button
           onClick={() => triggerTransition('sphere')}
           style={{
-            width: '50px',
-            height: '50px',
+            width: isMobile ? '44px' : '50px',
+            height: isMobile ? '44px' : '50px',
             background: buttonSecondaryColor,
             border: `2px solid ${buttonPrimaryColor}`,
             borderRadius: '8px',
@@ -425,7 +578,7 @@ const UIOverlay = ({
             e.currentTarget.style.transform = 'scale(1)';
           }}
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={buttonPrimaryColor} strokeWidth="2">
+          <svg width={isMobile ? '20' : '24'} height={isMobile ? '20' : '24'} viewBox="0 0 24 24" fill="none" stroke={buttonPrimaryColor} strokeWidth="2">
             <circle cx="12" cy="12" r="9" />
           </svg>
         </button>
@@ -458,48 +611,94 @@ const UIOverlay = ({
         mode={authMode}
       />
 
-      {/* Social Media Links */}
-      {socialLinks && socialLinks.length > 0 && (
-        <div
+      {/* Social Media Links & Legal */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: isMobile ? '20px' : '30px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          gap: isMobile ? '12px' : '16px',
+          zIndex: 1000,
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          maxWidth: isMobile ? '90%' : 'none',
+        }}
+      >
+        {/* Social Links */}
+        {socialLinks && socialLinks.length > 0 && socialLinks.map((link) => (
+          <a
+            key={link.id}
+            href={link.platform === 'email' ? `mailto:${link.url}` : link.url}
+            target={link.platform === 'email' ? '_self' : '_blank'}
+            rel={link.platform === 'email' ? '' : 'noopener noreferrer'}
+            style={{
+              cursor: 'pointer',
+              opacity: 0.9,
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.transform = 'scale(1.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '0.9';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            {getSocialIcon(link.platform)}
+          </a>
+        ))}
+
+        {/* Divider */}
+        {socialLinks && socialLinks.length > 0 && (
+          <div style={{ width: '1px', height: '16px', background: textColor, opacity: 0.3 }} />
+        )}
+
+        {/* Legal/Policies Button */}
+        <button
+          onClick={() => setIsLegalModalOpen(true)}
           style={{
-            position: 'absolute',
-            bottom: '30px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            background: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            opacity: 0.7,
+            transition: 'all 0.2s ease',
             display: 'flex',
-            gap: '20px',
-            zIndex: 1000,
             alignItems: 'center',
+            justifyContent: 'center',
+            padding: 0,
           }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.transform = 'scale(1.1)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '0.7';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          title="Legal & Policies"
         >
-          {socialLinks.map((link) => (
-            <a
-              key={link.id}
-              href={link.platform === 'email' ? `mailto:${link.url}` : link.url}
-              target={link.platform === 'email' ? '_self' : '_blank'}
-              rel={link.platform === 'email' ? '' : 'noopener noreferrer'}
-              style={{
-                cursor: 'pointer',
-                opacity: 0.9,
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '1';
-                e.currentTarget.style.transform = 'scale(1.2)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '0.9';
-                e.currentTarget.style.transform = 'scale(1)';
-              }}
-            >
-              {getSocialIcon(link.platform)}
-            </a>
-          ))}
-        </div>
-      )}
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={textColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.5))' }}>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Legal Modal */}
+      <LegalModal
+        isOpen={isLegalModalOpen}
+        onClose={() => setIsLegalModalOpen(false)}
+      />
    
     </>
   );

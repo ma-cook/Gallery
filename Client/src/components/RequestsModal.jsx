@@ -10,6 +10,17 @@ const RequestsModal = ({ isOpen, onClose }) => {
   const [fullImageView, setFullImageView] = useState(null);
   const [uploading, setUploading] = useState({});
   const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile/tablet screen sizes
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -117,11 +128,11 @@ const RequestsModal = ({ isOpen, onClose }) => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '520px',
-        maxWidth: '90vw',
-        maxHeight: '85vh',
+        width: isMobile ? '95vw' : '520px',
+        maxWidth: '95vw',
+        maxHeight: isMobile ? '90vh' : '85vh',
         background: '#fff',
-        borderRadius: '12px',
+        borderRadius: isMobile ? '10px' : '12px',
         padding: 0,
         zIndex: 1001,
         boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
@@ -134,7 +145,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        padding: '16px 20px',
+        padding: isMobile ? '14px 16px' : '16px 20px',
         borderBottom: '1px solid #eee',
         flexShrink: 0,
       }}>
@@ -142,7 +153,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
           style={{
             margin: 0,
             color: '#111',
-            fontSize: '15px',
+            fontSize: isMobile ? '14px' : '15px',
             fontWeight: 700,
           }}
         >
@@ -153,7 +164,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
           style={{
             background: 'transparent',
             border: 'none',
-            fontSize: '20px',
+            fontSize: isMobile ? '24px' : '20px',
             cursor: 'pointer',
             color: '#999',
             lineHeight: 1,
@@ -171,7 +182,7 @@ const RequestsModal = ({ isOpen, onClose }) => {
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 16px' : '16px 20px' }}>
         {loading ? (
           <p style={{ textAlign: 'center', color: '#999', fontSize: '13px', padding: '24px' }}>Loading requests...</p>
         ) : requests.length === 0 ? (

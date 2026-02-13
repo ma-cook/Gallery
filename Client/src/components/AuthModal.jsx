@@ -1,12 +1,23 @@
 // AuthModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 
 function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = false }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
   const auth = getAuth();
+
+  // Detect mobile/tablet screen sizes
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -30,9 +41,9 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
 
   const content = (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: isMobile ? '10px' : '12px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ color: '#444', fontSize: '12px', fontWeight: 600, letterSpacing: '0.01em' }}>Email</label>
+          <label style={{ color: '#444', fontSize: isMobile ? '11px' : '12px', fontWeight: 600, letterSpacing: '0.01em' }}>Email</label>
           <input
             type="email"
             value={email}
@@ -40,12 +51,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
             required
             placeholder="you@example.com"
             style={{
-              padding: '9px 12px',
+              padding: isMobile ? '11px 14px' : '9px 12px',
               background: '#fafafa',
               border: '1px solid #ddd',
               borderRadius: '8px',
               color: '#000',
-              fontSize: '13px',
+              fontSize: isMobile ? '16px' : '13px',
               outline: 'none',
               transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
             }}
@@ -62,7 +73,7 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
           />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <label style={{ color: '#444', fontSize: '12px', fontWeight: 600, letterSpacing: '0.01em' }}>Password</label>
+          <label style={{ color: '#444', fontSize: isMobile ? '11px' : '12px', fontWeight: 600, letterSpacing: '0.01em' }}>Password</label>
           <input
             type="password"
             value={password}
@@ -70,12 +81,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
             required
             placeholder="••••••••"
             style={{
-              padding: '9px 12px',
+              padding: isMobile ? '11px 14px' : '9px 12px',
               background: '#fafafa',
               border: '1px solid #ddd',
               borderRadius: '8px',
               color: '#000',
-              fontSize: '13px',
+              fontSize: isMobile ? '16px' : '13px',
               outline: 'none',
               transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
             }}
@@ -96,12 +107,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
           type="submit"
           style={{
             width: '100%',
-            padding: '10px',
+            padding: isMobile ? '12px' : '10px',
             background: '#111',
             border: 'none',
             borderRadius: '8px',
             color: '#fff',
-            fontSize: '13px',
+            fontSize: isMobile ? '14px' : '13px',
             fontWeight: 600,
             cursor: 'pointer',
             transition: 'background 0.15s',
@@ -135,12 +146,12 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
         type="button"
         style={{
           width: '100%',
-          padding: '10px',
+          padding: isMobile ? '12px' : '10px',
           background: '#fafafa',
           border: '1px solid #ddd',
           borderRadius: '8px',
           color: '#111',
-          fontSize: '13px',
+          fontSize: isMobile ? '14px' : '13px',
           fontWeight: 600,
           cursor: 'pointer',
           transition: 'all 0.15s',
@@ -180,7 +191,7 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '340px',
+        width: isMobile ? '92vw' : '340px',
         maxWidth: '90vw',
         background: '#fff',
         borderRadius: '12px',
@@ -194,7 +205,7 @@ function AuthModal({ isOpen, onClose, onSignIn, mode = 'signin', embedded = fals
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        padding: '16px 20px',
+        padding: isMobile ? '14px 18px' : '16px 20px',
         borderBottom: '1px solid #eee',
       }}>
         <h2

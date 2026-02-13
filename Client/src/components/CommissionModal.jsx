@@ -28,6 +28,17 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
   const [alertDialog, setAlertDialog] = useState({ isOpen: false, title: '', message: '', type: 'info' });
   const [products, setProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile/tablet screen sizes
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (isOpen && user?.uid) {
@@ -237,11 +248,11 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         top: '50%',
         left: '50%',
         transform: 'translate(-50%, -50%)',
-        width: '480px',
-        maxWidth: '92vw',
-        maxHeight: '85vh',
+        width: isMobile ? '95vw' : '480px',
+        maxWidth: '95vw',
+        maxHeight: isMobile ? '90vh' : '85vh',
         background: '#fff',
-        borderRadius: '12px',
+        borderRadius: isMobile ? '10px' : '12px',
         padding: 0,
         zIndex: 1001,
         boxShadow: '0 25px 60px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06)',
@@ -250,12 +261,12 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         overflow: 'hidden',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #eee' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: isMobile ? '14px 16px' : '16px 20px', borderBottom: '1px solid #eee' }}>
         <h2
           style={{
             margin: 0,
             color: '#111',
-            fontSize: '15px',
+            fontSize: isMobile ? '14px' : '15px',
             fontWeight: 700,
             letterSpacing: '-0.2px',
           }}
@@ -269,11 +280,11 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
               style={{
                 background: '#111',
                 border: 'none',
-                fontSize: '14px',
+                fontSize: isMobile ? '13px' : '14px',
                 cursor: 'pointer',
                 color: '#fff',
                 lineHeight: 1,
-                padding: '6px 12px',
+                padding: isMobile ? '8px 14px' : '6px 12px',
                 borderRadius: '6px',
                 fontWeight: 600,
                 transition: 'background 0.15s ease',
@@ -297,7 +308,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
             style={{
               background: 'transparent',
               border: 'none',
-              fontSize: '20px',
+              fontSize: isMobile ? '24px' : '20px',
               cursor: 'pointer',
               color: '#999',
               lineHeight: 1,
@@ -319,7 +330,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 16px' : '16px 20px' }}>
         {showForm ? (
           /* Commission Form */
           <form onSubmit={handleSubmitRequest} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
