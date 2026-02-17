@@ -390,24 +390,23 @@ const UIOverlay = ({
             fontWeight: 400,
           }}
         >
-          placeholder
+          Puppy Seal
         </h1>
       </div>
 
-      {/* Sign in / Create account text */}
+      {/* Commission and Sign in / Create account buttons */}
       <div
         style={{
           position: 'absolute',
-          top: isMobile ? '70px' : '37px',
-          right: isMobile ? '20px' : '190px',
+          top: isMobile ? '70px' : '100px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex',
-          flexDirection: isMobile ? 'column' : 'row',
-          gap: isMobile ? '12px' : '8px',
+          flexDirection: 'row',
+          gap: '8px',
           zIndex: 1000,
-          alignItems: isMobile ? 'flex-end' : 'center',
-          background: isMobile ? 'rgba(0, 0, 0, 0.6)' : 'transparent',
-          padding: isMobile ? '12px' : '0',
-          borderRadius: isMobile ? '8px' : '0',
+          alignItems: 'center',
+          pointerEvents: 'auto',
         }}
           >
         <span
@@ -416,7 +415,6 @@ const UIOverlay = ({
             fontSize: isMobile ? '14px' : '12px',
             cursor: 'pointer',
             textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-            marginLeft: isMobile ? '0' : '40px',
           }}
           onClick={() => {
             setIsCommissionVisible(true);
@@ -441,7 +439,6 @@ const UIOverlay = ({
               fontSize: isMobile ? '14px' : '12px',
               cursor: 'pointer',
               textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-              marginLeft: isMobile ? '0' : '40px',
             }}
             onClick={signOutUser}
             onMouseEnter={(e) => {
@@ -479,17 +476,15 @@ const UIOverlay = ({
             >
               sign in
             </span>
-            {!isMobile && (
-              <span
-                style={{
-                  color: textColor,
-                  fontSize: '12px',
-                  textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-                }}
-              >
-                |
-              </span>
-            )}
+            <span
+              style={{
+                color: textColor,
+                fontSize: isMobile ? '14px' : '12px',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              |
+            </span>
             <span
               style={{
                 color: textColor,
@@ -517,13 +512,15 @@ const UIOverlay = ({
         )}
       </div>
 
-      {/* Layout toggle buttons (top right) */}
+      {/* Layout toggle buttons (middle right) */}
       <div
         style={{
           position: 'absolute',
-          top: isMobile ? (user || !isAdmin ? '170px' : '20px') : '20px',
+          top: '50%',
           right: '20px',
+          transform: 'translateY(-50%)',
           display: 'flex',
+          flexDirection: 'column',
           gap: isMobile ? '8px' : '10px',
           zIndex: 1000,
         }}
