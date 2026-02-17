@@ -2,16 +2,21 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Images collection - allow all reads and writes
-    match /images/{imageId} {
-      allow read: if true;
-      allow write: if true;
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
     }
     
-    // Settings collection - allow all reads and writes
+    // Images collection - public read, admin-only write
+    match /images/{imageId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Settings collection - public read, admin-only write
     match /settings/{settingId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
     
     // Mail collection - used by Firebase Email Extension
@@ -23,38 +28,41 @@ service cloud.firestore {
     // Collection group query support for admins to fetch all requests
     match /{path=**}/requests/{requestId} {
       // Allow admins to read all requests via collectionGroup query
-      allow read: if request.auth != null && request.auth.token.admin == true;
+      allow read: if isAdmin();
     }
     
     // Users collection with requests subcollection
     match /users/{userId}/requests/{requestId} {
       // Admins can read all requests, users can read only their own
       allow read: if request.auth != null && 
-                     (request.auth.token.admin == true || 
-                      userId == request.auth.uid);
+                     (isAdmin() || userId == request.auth.uid);
       
       // Users can only create requests in their own subcollection
       allow create: if request.auth != null && userId == request.auth.uid;
       
-      // Only admins can update requests (for status changes)
-      allow update: if request.auth != null && request.auth.token.admin == true;
+      // Admins can update, users can only update paymentStatus on their own requests
+      allow update: if isAdmin() || 
+                       (request.auth != null && 
+                        userId == request.auth.uid && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paymentStatus', 'paidAt']));
       
       // Only admins can delete requests
-      allow delete: if request.auth != null && request.auth.token.admin == true;
+      allow delete: if isAdmin();
     }
     
     // Collection subcollection for completed artwork
     match /users/{userId}/collection/{collectionId} {
       // Users can read their own collection, admins can read all
       allow read: if request.auth != null && 
-                     (request.auth.token.admin == true || 
-                      userId == request.auth.uid);
+                     (isAdmin() || userId == request.auth.uid);
       
-      // Only admins can create/update collection items
-      allow create, update: if request.auth != null && request.auth.token.admin == true;
-      
-      // Only admins can delete collection items
-      allow delete: if request.auth != null && request.auth.token.admin == true;
+      // Only admins can create/update/delete collection items
+      allow create, update, delete: if isAdmin();
+    }
+    
+    // Block all other paths
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

@@ -2,32 +2,38 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow public read access to images
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Gallery images - public read, admin-only write
     match /images/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
-    // Allow public read access to collection preview images  
+    // Collection preview images - public read, admin-only write
     match /collection_previews/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
-    // Full-res completed artwork - no public read access
-    // Only accessible via signed URLs from cloud functions
+    // Full-res completed artwork - no public read, admin-only write
+    // Only accessible via download tokens from cloud functions
     match /collection_fullres/{allPaths=**} {
       allow read: if false;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
-    // Legacy collection path - allow public read for existing images
+    // Legacy collection path - public read, admin-only write
     match /collection/{allPaths=**} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
     }
     
-    // Allow authenticated users to upload example images for their requests
+    // Example images for commission requests
+    // Users can upload to their own folder, public read for admins to view
     match /requests/examples/{userId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;

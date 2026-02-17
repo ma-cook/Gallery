@@ -1,5 +1,6 @@
 import React, { useEffect, Suspense, useRef } from 'react';
 import { shallow } from 'zustand/shallow';
+import { useStoreWithEqualityFn } from 'zustand/traditional';
 import ImagePlane from './ImagePlane';
 import useStore from '../store'; // Added
 
@@ -20,7 +21,7 @@ const LazyImagePlane = ({
     ensureImageComponentState,
     updateImageComponentState, // Changed
     imageComponentStates,
-  } = useStore((state) => ({
+  } = useStoreWithEqualityFn(useStore, (state) => ({
     ensureImageComponentState: state.ensureImageComponentState,
     updateImageComponentState: state.updateImageComponentState, // Changed
     imageComponentStates: state.imageComponentStates,
