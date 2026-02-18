@@ -129,6 +129,7 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
+    <>
     <div
       style={{
         position: 'fixed',
@@ -323,10 +324,26 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
         )}
       </div>
 
-      {/* Add Product Form Modal - appears on top */}
+      <AlertDialog
+        isOpen={alertDialog.isOpen}
+        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
+        title={alertDialog.title}
+        message={alertDialog.message}
+        type={alertDialog.type}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, productId: null, productName: '' })}
+        onConfirm={confirmDelete}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${confirmDialog.productName}"? This will archive it in Stripe.`}
+      />
+    </div>
+
+      {/* Add Product Form Modal - rendered outside transformed parent to prevent position:fixed clipping */}
       {showAddForm && (
         <>
-          {/* Backdrop */}
           <div
             onClick={() => {
               setShowAddForm(false);
@@ -603,23 +620,7 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
           </div>
         </>
       )}
-
-      <AlertDialog
-        isOpen={alertDialog.isOpen}
-        onClose={() => setAlertDialog({ ...alertDialog, isOpen: false })}
-        title={alertDialog.title}
-        message={alertDialog.message}
-        type={alertDialog.type}
-      />
-
-      <ConfirmDialog
-        isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ isOpen: false, productId: null, productName: '' })}
-        onConfirm={confirmDelete}
-        title="Delete Product"
-        message={`Are you sure you want to delete "${confirmDialog.productName}"? This will archive it in Stripe.`}
-      />
-    </div>
+    </>
   );
 };
 

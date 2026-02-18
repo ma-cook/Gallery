@@ -398,9 +398,10 @@ const UIOverlay = ({
       <div
         style={{
           position: 'absolute',
-          top: isMobile ? '70px' : '100px',
-          left: '50%',
-          transform: 'translateX(-50%)',
+          top: isMobile ? '70px' : '37px',
+          ...(isMobile
+            ? { left: '50%', transform: 'translateX(-50%)' }
+            : { right: '40px' }),
           display: 'flex',
           flexDirection: 'row',
           gap: '8px',
