@@ -606,7 +606,7 @@ function App() {
   const handleDeleteImage = useCallback(
     async (index) => {
       const image = images[index];
-      await deleteImage(image.id, image.url);
+      await deleteImage(image.id, image.url, image.thumbnailUrl, image.mediumUrl);
       setImages((prevImages) => prevImages.filter((_, i) => i !== index));
     },
     [images, setImages]

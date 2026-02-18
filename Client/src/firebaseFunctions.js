@@ -166,13 +166,24 @@ export const handleFileChange = (file, user, setImages) => {
   return uploadTask;
 };
 
-export const deleteImage = async (imageId, imageUrl) => {
+export const deleteImage = async (imageId, imageUrl, thumbnailUrl, mediumUrl) => {
   const db = getFirestore();
   await deleteDoc(doc(db, 'images', imageId));
 
   const storage = getStorage();
-  const storageRef = ref(storage, imageUrl);
-  await deleteObject(storageRef);
+
+  // Delete original file
+  const deletePromises = [deleteObject(ref(storage, imageUrl)).catch(() => {})];
+
+  // Delete generated variants if they exist
+  if (thumbnailUrl) {
+    deletePromises.push(deleteObject(ref(storage, thumbnailUrl)).catch(() => {}));
+  }
+  if (mediumUrl) {
+    deletePromises.push(deleteObject(ref(storage, mediumUrl)).catch(() => {}));
+  }
+
+  await Promise.all(deletePromises);
 };
 
 export const saveColor = async (backgroundColor) => {
