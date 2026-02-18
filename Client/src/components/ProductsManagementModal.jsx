@@ -167,6 +167,22 @@ const ProductsManagementModal = ({ isOpen, onClose }) => {
         >
           Manage Stripe Products
         </h2>
+        <a
+          href="https://dashboard.stripe.com/acct_1SxRCe3TiN50XhDK/products?active=true"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'block',
+            marginTop: '2px',
+            fontSize: '11px',
+            color: '#6772e5',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
+        >
+          view product catalog in stripe ↗
+        </a>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             onClick={() => setShowAddForm(true)}

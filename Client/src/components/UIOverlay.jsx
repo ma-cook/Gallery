@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AuthModal from './AuthModal';
 import RequestsModal from './RequestsModal';
 import CommissionModal from './CommissionModal';
+import CollectionModal from './CollectionModal';
 import ProductsManagementModal from './ProductsManagementModal';
 import LegalModal from './LegalModal';
 import { signOutUser } from '../Auth';
@@ -37,6 +38,7 @@ const UIOverlay = ({
   const [isLegalModalOpen, setIsLegalModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isCollectionOpen, setIsCollectionOpen] = useState(false);
   
   // Detect mobile/tablet screen sizes
   useEffect(() => {
@@ -434,23 +436,58 @@ const UIOverlay = ({
               </span>
         
         {user ? (
-          <span
-            style={{
-              color: textColor,
-              fontSize: isMobile ? '14px' : '12px',
-              cursor: 'pointer',
-              textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
-            }}
-            onClick={signOutUser}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-          >
-            Sign out
-          </span>
+          <>
+            <span
+              style={{
+                color: textColor,
+                fontSize: isMobile ? '14px' : '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+                marginLeft: isMobile ? '0' : '40px',
+              }}
+              onClick={() => {
+                setIsCollectionOpen(true);
+                setIsCommissionVisible(false);
+                setIsRequestsVisible(false);
+                setIsProductsVisible(false);
+                setIsAuthModalOpen(false);
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              Collection
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: isMobile ? '14px' : '12px',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              |
+            </span>
+            <span
+              style={{
+                color: textColor,
+                fontSize: isMobile ? '14px' : '12px',
+                cursor: 'pointer',
+                textShadow: '1px 1px 4px rgba(0, 0, 0, 0.5)',
+              }}
+              onClick={signOutUser}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+            >
+              sign out
+            </span>
+          </>
         ) : (
           <>
             <span
@@ -599,6 +636,17 @@ const UIOverlay = ({
         isOpen={isCommissionVisible}
         onClose={() => setIsCommissionVisible(false)}
         user={user}
+      />
+
+      {/* Collection Modal - shows user's completed commissioned artworks */}
+      <CollectionModal
+        isOpen={isCollectionOpen}
+        onClose={() => setIsCollectionOpen(false)}
+        user={user}
+        onOpenCommission={() => {
+          setIsCollectionOpen(false);
+          setIsCommissionVisible(true);
+        }}
       />
 
       {/* Auth Modal */}
