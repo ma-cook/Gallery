@@ -387,6 +387,8 @@ function App() {
   const isAdmin = useStore((state) => state.isAdmin);
   const setIsAdmin = useStore((state) => state.setIsAdmin);
   const setIsAuthModalOpen = useStore((state) => state.setIsAuthModalOpen);
+  const setIsCommissionVisible = useStore((state) => state.setIsCommissionVisible);
+  const setPendingPayRequestId = useStore((state) => state.setPendingPayRequestId);
 
   const [adaptiveDPR, setAdaptiveDPR] = useState([1, 1.5]); // Experimental: Adaptive pixel ratio
 
@@ -441,6 +443,18 @@ function App() {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Handle deep-link: ?pay=requestId opens CommissionModal with PaymentModal for that request
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payId = params.get('pay');
+    if (payId) {
+      setPendingPayRequestId(payId);
+      setIsCommissionVisible(true);
+      // Remove the query param from the URL without triggering a navigation
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   useEffect(() => {

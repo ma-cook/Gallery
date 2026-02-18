@@ -593,3 +593,120 @@ exports.sendCompletionEmail = functions.firestore
       return null;
     }
   });
+
+/**
+ * Create or retrieve a Stripe Customer for a given email/name.
+ * Stores the customerId back on the Firestore request document.
+ */
+exports.createOrGetStripeCustomer = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  const { email, name, userId, requestId } = data;
+  if (!email || !userId || !requestId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing required parameters: email, userId, requestId');
+  }
+
+  try {
+    // Check if a customer already exists for this email
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    let customer;
+    if (existing.data.length > 0) {
+      customer = existing.data[0];
+    } else {
+      customer = await stripe.customers.create({ email, name: name || '' });
+    }
+
+    // Persist the customerId on the request document
+    await admin.firestore()
+      .doc(`users/${userId}/requests/${requestId}`)
+      .update({ stripeCustomerId: customer.id });
+
+    return { customerId: customer.id };
+  } catch (error) {
+    console.error('Error creating/getting Stripe customer:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to create customer', error.message);
+  }
+});
+
+/**
+ * Create a Stripe Invoice for a completed request and send it to the customer.
+ * The invoice email contains a deep link back into the app to open the PaymentModal.
+ */
+exports.sendInvoice = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+  }
+
+  // Admin only
+  if (!context.auth.token.admin) {
+    throw new functions.https.HttpsError('permission-denied', 'User must be an admin');
+  }
+
+  const { userId, requestId } = data;
+  if (!userId || !requestId) {
+    throw new functions.https.HttpsError('invalid-argument', 'Missing userId or requestId');
+  }
+
+  const requestRef = admin.firestore().doc(`users/${userId}/requests/${requestId}`);
+  const requestDoc = await requestRef.get();
+  if (!requestDoc.exists) {
+    throw new functions.https.HttpsError('not-found', 'Request not found');
+  }
+
+  const req = requestDoc.data();
+
+  if (!req.stripeCustomerId) {
+    throw new functions.https.HttpsError('failed-precondition', 'No Stripe customer found for this request. Ensure createOrGetStripeCustomer has been called.');
+  }
+
+  if (!req.priceId && !req.priceAmount) {
+    throw new functions.https.HttpsError('failed-precondition', 'No price information on this request.');
+  }
+
+  const siteUrl = functions.config().site?.url || process.env.SITE_URL || 'https://your-gallery-site.web.app';
+  const payUrl = `${siteUrl}?pay=${requestId}`;
+
+  try {
+    // Create invoice item
+    const invoiceItemParams = {
+      customer: req.stripeCustomerId,
+      description: req.productName || 'Commissioned Artwork',
+      currency: (req.priceCurrency || 'NZD').toLowerCase(),
+    };
+    if (req.priceId) {
+      invoiceItemParams.price = req.priceId;
+    } else {
+      invoiceItemParams.amount = Math.round(req.priceAmount * 100);
+    }
+    await stripe.invoiceItems.create(invoiceItemParams);
+
+    // Create and finalize the invoice
+    const invoice = await stripe.invoices.create({
+      customer: req.stripeCustomerId,
+      collection_method: 'send_invoice',
+      days_until_due: 30,
+      description: `Commission: ${req.productName || 'Artwork'} — Request #${requestId}`,
+      footer: `Pay securely via our website: ${payUrl}`,
+      metadata: { requestId, userId },
+    });
+
+    const finalizedInvoice = await stripe.invoices.finalizeInvoice(invoice.id);
+
+    // Send the invoice email
+    await stripe.invoices.sendInvoice(finalizedInvoice.id);
+
+    // Store the invoice ID on the request
+    await requestRef.update({
+      stripeInvoiceId: finalizedInvoice.id,
+      invoiceSentAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    console.log(`Invoice ${finalizedInvoice.id} sent for request ${requestId}`);
+    return { invoiceId: finalizedInvoice.id };
+  } catch (error) {
+    console.error('Error sending Stripe invoice:', error);
+    throw new functions.https.HttpsError('internal', 'Failed to send invoice', error.message);
+  }
+});

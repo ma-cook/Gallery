@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { fetchUserRequests, createRequest, checkUserHasRequests, updateRequestStatus, deleteRequest, getStripeProducts, markRequestAsPaid, getFullResDownloadUrl } from '../firebaseFunctions';
+import { fetchUserRequests, createRequest, checkUserHasRequests, updateRequestStatus, deleteRequest, getStripeProducts, markRequestAsPaid, getFullResDownloadUrl, createOrGetStripeCustomer } from '../firebaseFunctions';
 import { handleSignIn } from '../utils/authFunctions';
 import AuthModal from './AuthModal';
 import PaymentModal from './PaymentModal';
 import ConfirmDialog from './ConfirmDialog';
 import AlertDialog from './AlertDialog';
+import useStore from '../store';
 
 const CommissionModal = ({ isOpen, onClose, user }) => {
+  const pendingPayRequestId = useStore((state) => state.pendingPayRequestId);
+  const setPendingPayRequestId = useStore((state) => state.setPendingPayRequestId);
+
   const [requests, setRequests] = useState([]);
   const [expandedRequestId, setExpandedRequestId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,6 +61,17 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
       setFormData(prev => ({ ...prev, email: user.email }));
     }
   }, [user]);
+
+  // Deep-link: when pendingPayRequestId is set and requests are loaded, auto-open PaymentModal
+  useEffect(() => {
+    if (!isOpen || !pendingPayRequestId || requests.length === 0) return;
+    const match = requests.find((r) => r.id === pendingPayRequestId);
+    if (match) {
+      setSelectedRequest(match);
+      setPaymentModalOpen(true);
+      setPendingPayRequestId(null);
+    }
+  }, [isOpen, pendingPayRequestId, requests]);
 
   const loadProducts = async () => {
     setLoadingProducts(true);
@@ -206,6 +221,28 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         userId: user?.uid || null,
         ...productInfo,
       }, exampleImage);
+      // Attempt to create/retrieve a Stripe customer for this user so invoicing is ready
+      try {
+        if (user?.uid) {
+          // loadRequests is called below; we need the new requestId to store the customerId
+          // Re-fetch so we can get the latest requestId
+          const freshRequests = await fetchUserRequests(user.uid);
+          const newestRequest = freshRequests.sort((a, b) =>
+            (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)
+          )[0];
+          if (newestRequest) {
+            await createOrGetStripeCustomer(
+              formData.email,
+              formData.name,
+              user.uid,
+              newestRequest.id
+            );
+          }
+        }
+      } catch (customerErr) {
+        // Non-fatal — invoice can still be sent later
+        console.warn('createOrGetStripeCustomer failed (non-fatal):', customerErr);
+      }
       // Reset form
       setFormData({
         name: '',

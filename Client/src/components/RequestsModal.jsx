@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage, deleteRequest } from '../firebaseFunctions';
+import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage, deleteRequest, sendInvoice } from '../firebaseFunctions';
 import AlertDialog from './AlertDialog';
 
 const RequestsModal = ({ isOpen, onClose }) => {
@@ -86,6 +86,10 @@ const RequestsModal = ({ isOpen, onClose }) => {
         delete newState[requestId];
         return newState;
       });
+      // Send Stripe invoice to the client (fire-and-forget)
+      sendInvoice(userId, requestId).catch((err) =>
+        console.warn('Invoice send failed (non-fatal):', err)
+      );
     } catch (error) {
       console.error('Error marking as completed:', error);
       setAlertDialog({

@@ -34,6 +34,9 @@ const useStore = create((set) => ({
   isRequestsVisible: false,
   isProductsVisible: false,
 
+  // Deep-link state: when set, CommissionModal auto-opens the PaymentModal for this request
+  pendingPayRequestId: null,
+
   // Actions
   setImages: (updater) =>
     set((state) => ({
@@ -68,6 +71,7 @@ const useStore = create((set) => ({
   setIsRequestsVisible: (isVisible) => set({ isRequestsVisible: isVisible }),
   setIsProductsVisible: (isVisible) => set({ isProductsVisible: isVisible }),
   setSocialLinks: (links) => set({ socialLinks: links }),
+  setPendingPayRequestId: (id) => set({ pendingPayRequestId: id }),
 
   // Actions for image component states
   ensureImageComponentState: (index) =>

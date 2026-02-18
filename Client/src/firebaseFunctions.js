@@ -657,3 +657,30 @@ export const getFullResDownloadUrl = async (requestId) => {
     throw error;
   }
 };
+
+// Create or retrieve a Stripe Customer for the given email/name,
+// and store the customerId on the Firestore request document.
+export const createOrGetStripeCustomer = async (email, name, userId, requestId) => {
+  try {
+    const functions = getFunctions();
+    const createCustomer = httpsCallable(functions, 'createOrGetStripeCustomer');
+    const result = await createCustomer({ email, name, userId, requestId });
+    return result.data;
+  } catch (error) {
+    console.error('Error creating/getting Stripe customer:', error);
+    throw error;
+  }
+};
+
+// Send a Stripe invoice for a completed request.
+export const sendInvoice = async (userId, requestId) => {
+  try {
+    const functions = getFunctions();
+    const invoiceFn = httpsCallable(functions, 'sendInvoice');
+    const result = await invoiceFn({ userId, requestId });
+    return result.data;
+  } catch (error) {
+    console.error('Error sending invoice:', error);
+    throw error;
+  }
+};
