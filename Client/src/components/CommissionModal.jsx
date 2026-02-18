@@ -242,6 +242,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
   if (!isOpen) return null;
 
   return (
+    <>
     <div
       style={{
         position: 'fixed',
@@ -1112,7 +1113,9 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         </div>
       )}
 
-      {/* Payment Modal */}
+    </div>
+
+      {/* Payment Modal - outside transformed parent to prevent position:fixed clipping */}
       <PaymentModal
         isOpen={paymentModalOpen}
         onClose={() => {
@@ -1157,7 +1160,7 @@ const CommissionModal = ({ isOpen, onClose, user }) => {
         message={alertDialog.message}
         type={alertDialog.type}
       />
-    </div>
+    </>
   );
 };
 
