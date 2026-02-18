@@ -7,7 +7,7 @@ import {
 import { createCheckoutSession } from '../firebaseFunctions';
 
 // TODO: Replace with your actual Stripe publishable key
-const stripePromise = loadStripe('pk_test_51SwX2LPw6BfSGHAIQe4EH2cyMuWfdJj1StmTtEICe9fXa59ID0rEJBE4H2pIUilCHALcXzzrEJjxT7UTurp5LVZ300DB86wmLs');
+const stripePromise = loadStripe('pk_live_51SxRCe3TiN50XhDKykBTuIjogWw33j4Bt1CEMdkzUh0R8IkrzVFXR61ZJC63lO0ROGGlyixdqwm98KvenTQrL9my00Js7BNp9r');
 
 const PaymentModal = ({ isOpen, onClose, onPaymentComplete, request, userId }) => {
   const [clientSecret, setClientSecret] = useState('');
