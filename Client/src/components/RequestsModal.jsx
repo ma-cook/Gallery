@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage, deleteRequest, sendInvoice } from '../firebaseFunctions';
+import { fetchRequests, updateRequestStatus, uploadCompletedRequestImage, deleteRequest, sendInvoice } from '../utils/firebaseFunctions';
 import AlertDialog from './AlertDialog';
 
 const RequestsModal = ({ isOpen, onClose }) => {

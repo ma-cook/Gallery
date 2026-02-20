@@ -4,7 +4,7 @@ import {
   EmbeddedCheckoutProvider,
   EmbeddedCheckout,
 } from '@stripe/react-stripe-js';
-import { createCheckoutSession } from '../firebaseFunctions';
+import { createCheckoutSession } from '../utils/firebaseFunctions';
 
 // TODO: Replace with your actual Stripe publishable key
 const stripePromise = loadStripe('pk_live_51SxRCe3TiN50XhDKykBTuIjogWw33j4Bt1CEMdkzUh0R8IkrzVFXR61ZJC63lO0ROGGlyixdqwm98KvenTQrL9my00Js7BNp9r');

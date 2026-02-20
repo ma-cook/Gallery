@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getStripeProducts, createStripeProduct, deleteStripeProduct } from '../firebaseFunctions';
+import { getStripeProducts, createStripeProduct, deleteStripeProduct } from '../utils/firebaseFunctions';
 import AlertDialog from './AlertDialog';
 import ConfirmDialog from './ConfirmDialog';
 

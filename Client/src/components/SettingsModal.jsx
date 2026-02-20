@@ -11,7 +11,7 @@ import {
   saveBackgroundIntensity,
   handleHdrFileUpload,
   saveSocialLinks,
-} from '../firebaseFunctions';
+} from '../utils/firebaseFunctions';
 
 function SettingsModal({
   isOpen,

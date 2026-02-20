@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchUserRequests, createRequest, checkUserHasRequests, updateRequestStatus, deleteRequest, getStripeProducts, markRequestAsPaid, getFullResDownloadUrl, createOrGetStripeCustomer } from '../firebaseFunctions';
+import { fetchUserRequests, createRequest, checkUserHasRequests, updateRequestStatus, deleteRequest, getStripeProducts, markRequestAsPaid, getFullResDownloadUrl, createOrGetStripeCustomer } from '../utils/firebaseFunctions';
 import { handleSignIn } from '../utils/authFunctions';
 import AuthModal from './AuthModal';
 import PaymentModal from './PaymentModal';

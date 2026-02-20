@@ -33,7 +33,7 @@ import {
   fetchHdrFileUrl,
   fetchSocialLinks,
   cleanupOrphanedImages,
-} from './firebaseFunctions';
+} from './utils/firebaseFunctions';
 import {
   calculateSpherePositions,
   calculatePlanePositions,

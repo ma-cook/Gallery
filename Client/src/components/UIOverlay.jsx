@@ -5,7 +5,7 @@ import CommissionModal from './CommissionModal';
 import CollectionModal from './CollectionModal';
 import ProductsManagementModal from './ProductsManagementModal';
 import LegalModal from './LegalModal';
-import { signOutUser } from '../Auth';
+import { signOutUser } from '../utils/Auth';
 import { handleSignIn } from '../utils/authFunctions';
 import useStore from '../store';
 

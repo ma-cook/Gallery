@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetchUserRequests, getFullResDownloadUrl } from '../firebaseFunctions';
+import { fetchUserRequests, getFullResDownloadUrl } from '../utils/firebaseFunctions';
 
 const CollectionModal = ({ isOpen, onClose, user, onOpenCommission }) => {
   const [requests, setRequests] = useState([]);
