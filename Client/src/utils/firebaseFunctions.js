@@ -45,6 +45,8 @@ export const fetchImages = async () => {
         url: url,
         thumbnailUrl: data.thumbnailUrl,
         mediumUrl: data.mediumUrl,
+        isGif: data.isGif || data.isAnimatedWebP || false,
+        isAnimatedWebP: data.isAnimatedWebP || false,
       });
     }
     
@@ -138,14 +140,16 @@ export const handleFileChange = (file, user, setImages) => {
       // Handle successful upload
       try {
         const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-        // Detect if file is a GIF
+        // Detect if file is a GIF or animated WebP
         const isGif = file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif');
+        const isAnimatedWebP = file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp');
         const imageDoc = {
           url: downloadURL,
           name: file.name, // Storing the file name
           uploadedAt: new Date(),
           userId: user ? user.uid : null, // Optionally store user ID
-          isGif: isGif, // Track if this is a GIF file
+          isGif: isGif || isAnimatedWebP, // Treat animated WebP same as GIF for display
+          isAnimatedWebP: isAnimatedWebP, // Track animated WebP specifically
           contentType: file.type, // Store content type
         };
         const docRef = await addDoc(collection(db, 'images'), imageDoc);
@@ -154,6 +158,8 @@ export const handleFileChange = (file, user, setImages) => {
           url: downloadURL,
           id: docRef.id,
           name: file.name,
+          isGif: isGif || isAnimatedWebP,
+          isAnimatedWebP: isAnimatedWebP,
         };
         setImages((prevImages) => {
           const updatedImages = [...prevImages, newImageData];

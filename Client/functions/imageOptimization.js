@@ -57,6 +57,43 @@ exports.generateImageVariants = functions.storage.object().onFinalize(async (obj
     return null;
   }
 
+  // Skip processing animated WebP files to preserve animation
+  // Check by downloading and inspecting with Sharp
+  if (contentType === 'image/webp') {
+    const bucket = admin.storage().bucket(fileBucket);
+    const tempCheckPath = path.join(os.tmpdir(), `check_${path.basename(filePath)}`);
+    try {
+      await bucket.file(filePath).download({ destination: tempCheckPath });
+      const webpMetadata = await sharp(tempCheckPath).metadata();
+      
+      if (webpMetadata.pages && webpMetadata.pages > 1) {
+        console.log('Animated WebP detected (' + webpMetadata.pages + ' frames), skipping optimization to preserve animation');
+        await fs.remove(tempCheckPath);
+        
+        const db = admin.firestore();
+        const fileName = path.basename(filePath);
+        const imagesRef = db.collection('images');
+        const snapshot = await imagesRef.where('name', '==', fileName).limit(1).get();
+        
+        if (!snapshot.empty) {
+          const docRef = snapshot.docs[0].ref;
+          await docRef.update({
+            isGif: true, // Treat like GIF for frontend display
+            isAnimatedWebP: true,
+            variantsGenerated: false, // No variants for animated WebP
+            contentType: 'image/webp'
+          });
+          console.log('Firestore updated to mark animated WebP:', fileName);
+        }
+        return null;
+      }
+      await fs.remove(tempCheckPath);
+    } catch (checkError) {
+      console.warn('Error checking WebP animation, proceeding with optimization:', checkError.message);
+      try { await fs.remove(tempCheckPath); } catch (e) { /* ignore */ }
+    }
+  }
+
   const bucket = admin.storage().bucket(fileBucket);
   const fileName = path.basename(filePath);
   const fileNameWithoutExt = path.parse(fileName).name;
