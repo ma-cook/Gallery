@@ -22,7 +22,7 @@ import {
   getDownloadURL,
 } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from './firebase';
+import { db } from '../firebase';
 
 export const fetchImages = async () => {
   try {
