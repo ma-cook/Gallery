@@ -13,6 +13,7 @@ import {
   where,
   serverTimestamp,
   collectionGroup,
+  onSnapshot,
 } from 'firebase/firestore';
 import {
   getStorage,
@@ -55,6 +56,37 @@ export const fetchImages = async () => {
     console.error('Error fetching images:', error);
     return [];
   }
+};
+
+/**
+ * Subscribe to real-time image updates.
+ * The callback is called immediately with current data and again whenever
+ * a document changes (e.g. when the Cloud Function writes thumbnailUrl/mediumUrl).
+ * Returns an unsubscribe function.
+ */
+export const subscribeToImages = (onUpdate) => {
+  const imagesCollection = collection(db, 'images');
+  return onSnapshot(imagesCollection, (querySnapshot) => {
+    const seenUrls = new Set();
+    const images = [];
+    for (const docSnapshot of querySnapshot.docs) {
+      const data = docSnapshot.data();
+      const url = data.url;
+      if (!url || typeof url !== 'string' || seenUrls.has(url)) continue;
+      seenUrls.add(url);
+      images.push({
+        id: docSnapshot.id,
+        url,
+        thumbnailUrl: data.thumbnailUrl,
+        mediumUrl: data.mediumUrl,
+        isGif: data.isGif || data.isAnimatedWebP || false,
+        isAnimatedWebP: data.isAnimatedWebP || false,
+      });
+    }
+    onUpdate(images);
+  }, (error) => {
+    console.error('Error in images snapshot listener:', error);
+  });
 };
 
 /**

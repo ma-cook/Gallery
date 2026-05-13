@@ -18,6 +18,7 @@ import Loader from './components/Loader';
 
 import {
   fetchImages,
+  subscribeToImages,
   handleFileChange,
   deleteImage,
   saveColor,
@@ -458,9 +459,15 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // Subscribe to real-time image updates so variant URLs written by the
+    // Cloud Function (thumbnailUrl, mediumUrl) are picked up automatically
+    // without requiring a page refresh.
+    const unsubscribeImages = subscribeToImages((imagesData) => {
+      setImages(imagesData);
+    });
+
     const fetchData = async () => {
       const [
-        imagesData,
         backgroundColorData,
         glowColorData,
         titleOrbColorData,
@@ -473,7 +480,6 @@ function App() {
         hdrFileUrlData,
         socialLinksData,
       ] = await Promise.all([
-        fetchImages(),
         fetchColor(),
         fetchOrbColor(),
         fetchTitleOrbColor(),
@@ -486,7 +492,6 @@ function App() {
         fetchHdrFileUrl(),
         fetchSocialLinks(),
       ]);
-      setImages(imagesData);
       setBackgroundColor(backgroundColorData);
       setGlowColor(glowColorData);
       setTitleOrbColor(titleOrbColorData);
@@ -498,10 +503,10 @@ function App() {
       setBackgroundIntensity(backgroundIntensityData);
       setHdrFileUrl(hdrFileUrlData);
       setSocialLinks(socialLinksData);
-      console.log('Loaded social links from Firebase:', socialLinksData);
     };
 
     fetchData();
+    return () => unsubscribeImages();
   }, []);
 
   // Expose cleanup function to window for manual debugging only

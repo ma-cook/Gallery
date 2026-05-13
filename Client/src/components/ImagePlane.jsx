@@ -195,11 +195,6 @@ const ImagePlane = forwardRef(
       // If no thumbnailUrl, this means image variants haven't been generated yet
       const urlToLoad = thumbnailUrl || imageUrl;
       
-      // Log once if variants are missing (helpful for debugging)
-      if (!thumbnailUrl && imageUrl && originalIndex === 0) {
-        console.log('📌 Image variants not generated yet. Using original images. Deploy Cloud Functions to enable optimization.');
-      }
-
       // Skip if no URL or this image has failed before
       if (!urlToLoad || failedImages.has(urlToLoad)) {
         setIsLoading(false);
