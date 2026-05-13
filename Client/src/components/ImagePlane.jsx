@@ -56,7 +56,8 @@ const ImagePlane = forwardRef(
   ) => {
     // If no variants exist, disable multi-quality system for this image
     // GIFs also don't have variants (to preserve animation)
-    const hasVariants = Boolean(thumbnailUrl && mediumUrl) && !isGif;
+    // Only requires thumbnailUrl - mediumUrl may be absent for small images (<= 1024px)
+    const hasVariants = Boolean(thumbnailUrl) && !isGif;
     
     // Special handling for GIFs - use HTML rendering to preserve animation
     const spriteRef = useRef();
@@ -288,19 +289,21 @@ const ImagePlane = forwardRef(
     }, [thumbnailUrl, imageUrl, onError]);
 
     // Load medium quality when needed
+    // For images without a generated medium variant (small images <= 1024px), use imageUrl as medium
+    const effectiveMediumUrl = mediumUrl || imageUrl;
     useEffect(() => {
       // Skip if no variants exist - use original image only
       if (!hasVariants) {
         return;
       }
       
-      // Don't load if no medium URL available or already loaded
-      if (!mediumUrl || mediumTexture) {
+      // Don't load if already loaded
+      if (mediumTexture) {
         return;
       }
 
       // Skip if this image has failed before
-      if (failedImages.has(mediumUrl)) {
+      if (failedImages.has(effectiveMediumUrl)) {
         return;
       }
 
@@ -311,7 +314,7 @@ const ImagePlane = forwardRef(
       // Delay medium quality loading slightly to prioritize thumbnails
       const timeoutId = setTimeout(() => {
         const loadTexture = async () => {
-          const cachedUrl = await imageCache.loadImage(mediumUrl);
+          const cachedUrl = await imageCache.loadImage(effectiveMediumUrl);
           
           if (!isMounted) {
             URL.revokeObjectURL(cachedUrl);
@@ -336,9 +339,9 @@ const ImagePlane = forwardRef(
               },
               undefined,
               (err) => {
-                failedImages.add(mediumUrl);
+                failedImages.add(effectiveMediumUrl);
                 if (!err.status || err.status !== 404) {
-                  logErrorThrottled(`med-${mediumUrl}`, 'Failed to load medium quality:', mediumUrl);
+                  logErrorThrottled(`med-${effectiveMediumUrl}`, 'Failed to load medium quality:', effectiveMediumUrl);
                 }
                 if (blobUrl) URL.revokeObjectURL(blobUrl);
                 mediumBlobRef.current = null;
@@ -351,9 +354,9 @@ const ImagePlane = forwardRef(
         // Queue texture loading to avoid blocking camera movement
         textureLoadQueue.load(loadTexture, 5) // Medium priority
           .catch((err) => {
-            failedImages.add(mediumUrl);
+            failedImages.add(effectiveMediumUrl);
             if (!err.status || err.status !== 404) {
-              logErrorThrottled(`cache-med-${mediumUrl}`, 'Cache load failed for medium:', mediumUrl);
+              logErrorThrottled(`cache-med-${effectiveMediumUrl}`, 'Cache load failed for medium:', effectiveMediumUrl);
             }
           });
       }, 100); // Small delay to prioritize thumbnails
@@ -366,7 +369,7 @@ const ImagePlane = forwardRef(
           mediumBlobRef.current = null;
         }
       };
-    }, [mediumUrl, hasVariants]);
+    }, [effectiveMediumUrl, hasVariants]);
 
     // Load high quality only when clicked (requested)
     useEffect(() => {
