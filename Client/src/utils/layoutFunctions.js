@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 export const calculateSpherePositions = (images, sphereRadius) => {
   return images.map((_, index) => {
     const total = images.length;
@@ -13,16 +11,18 @@ export const calculateSpherePositions = (images, sphereRadius) => {
   });
 };
 
-export const calculatePlanePositions = (images) => {
-  const gridSize = Math.ceil(Math.sqrt(images.length));
-  const spacing = 10 + images.length * 0.1; // Adjust the spacing based on the number of images
+export const calculateVerticalPositions = (images) => {
+  if (images.length === 0) return [];
+  const xPositions = [-50, -17, 17, 50];
+  const ySpacing = 15;
+  const startY = 20;
+
   return images.map((_, index) => {
-    const row = Math.floor(index / gridSize);
-    const col = index % gridSize;
-    return [
-      col * spacing - (gridSize * spacing) / 2,
-      row * spacing - (gridSize * spacing) / 2,
-      0,
-    ];
+    const col = index % 4;
+    const row = Math.floor(index / 4);
+    const x = xPositions[col];
+    const y = startY - row * ySpacing;
+    const z = 0;
+    return [x, y, z];
   });
 };

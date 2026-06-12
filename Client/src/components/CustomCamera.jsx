@@ -4,7 +4,7 @@ import { PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { textureLoadQueue, thumbnailLoadQueue } from '../utils/TextureLoadQueue';
 
-const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
+const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgress = 0, scrollYRange = { min: 0, max: 20 }, sphereTransition = 0 }, ref) => {
   const { camera, gl } = useThree();
   const cameraRef = useRef();
   const controlsRef = useRef();
@@ -59,6 +59,12 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
   const startTimeRef = useRef(0);
   const animationDurationRef = useRef(600); // milliseconds (was 800)
   const constraintFrameCounter = useRef(0);
+
+  // Scroll-based vertical camera movement
+  const scrollYTarget = useRef(0);
+  const scrollCamPos = useRef(new THREE.Vector3());
+  const CAMERA_DISTANCE = 100;
+  const FAR_DISTANCE = 120;
 
   useFrame((state) => {
     // Calculate camera velocity
@@ -125,8 +131,26 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
         startTimeRef.current = 0; // Reset for next animation
       }
     } else {
-      // Only update controls target when not in animated movement
-      controlsRef.current.target.lerp(targetRef.current, 0.15); // Increased responsiveness (was 0.1)
+      // Scroll-based vertical movement with sphere transition
+      const { min: scrollMin, max: scrollMax } = scrollYRange;
+
+      // Y position: column scroll, blended toward center (0) as sphere transition progresses
+      const columnY = scrollMax + (scrollMin - scrollMax) * scrollProgress;
+      const targetY = columnY * (1 - sphereTransition);
+
+      // Distance: CAMERA_DISTANCE in column view, FAR_DISTANCE in sphere view
+      const targetDistance = CAMERA_DISTANCE + (FAR_DISTANCE - CAMERA_DISTANCE) * sphereTransition;
+
+      scrollYTarget.current += (targetY - scrollYTarget.current) * 0.06;
+
+      // Move the camera target (lookAt point) vertically
+      targetRef.current.set(0, scrollYTarget.current, 0);
+
+      // Move camera position 
+      scrollCamPos.current.set(0, scrollYTarget.current, targetDistance);
+      cameraRef.current.position.lerp(scrollCamPos.current, 0.06);
+
+      controlsRef.current.target.lerp(targetRef.current, 0.15);
       controlsRef.current.update();
     }
 
@@ -146,11 +170,11 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
 
       // Apply constraints with smoothing
       cameraRef.current.position.x +=
-        (constrainedX - cameraRef.current.position.x) * 0.15; // Increased responsiveness (was 0.1)
+        (constrainedX - cameraRef.current.position.x) * 0.15;
       cameraRef.current.position.y +=
-        (constrainedY - cameraRef.current.position.y) * 0.15; // Increased responsiveness (was 0.1)
+        (constrainedY - cameraRef.current.position.y) * 0.15;
       cameraRef.current.position.z +=
-        (constrainedZ - cameraRef.current.position.z) * 0.15; // Increased responsiveness (was 0.1)
+        (constrainedZ - cameraRef.current.position.z) * 0.15;
     }
   });
 
@@ -173,14 +197,12 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8 }, ref) => {
       <OrbitControls
         ref={controlsRef}
         args={[cameraRef.current, gl.domElement]}
-        enableZoom={true}
+        enableZoom={false}
         enablePan={true}
         enableRotate={true}
         enableDamping={true}
         dampingFactor={0.05} // Reduced for more responsive control (was 0.1)
         rotateSpeed={0.5}
-        zoomSpeed={0.8}
-        maxDistance={150}
         // Add performance optimizations
         maxPolarAngle={Math.PI / 1.75} // Limit rotation to avoid rendering unnecessary areas
         minPolarAngle={Math.PI / 8} // Prevent going too high up

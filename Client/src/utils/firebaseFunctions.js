@@ -83,6 +83,7 @@ export const subscribeToImages = (onUpdate) => {
         isAnimatedWebP: data.isAnimatedWebP || false,
       });
     }
+    console.log(`subscribeToImages: ${querySnapshot.docs.length} docs → ${images.length} images (${querySnapshot.docs.length - images.length} filtered out)`);
     onUpdate(images);
   }, (error) => {
     console.error('Error in images snapshot listener:', error);

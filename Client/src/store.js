@@ -20,6 +20,7 @@ const useStore = create((set) => ({
   backgroundIntensity: 0.08,
   hdrFileUrl: '/syferfontein_1d_clear_puresky_4k.hdr',
   uploadProgress: 0,
+  scrollProgress: 0,
   visibleImageIndices: [],
   imageComponentStates: {},
   socialLinks: [],
@@ -59,6 +60,7 @@ const useStore = create((set) => ({
   setBackgroundIntensity: (value) => set({ backgroundIntensity: value }),
   setHdrFileUrl: (url) => set({ hdrFileUrl: url }),
   setUploadProgress: (progress) => set({ uploadProgress: progress }),
+  setScrollProgress: (progress) => set({ scrollProgress: progress }),
   setVisibleImageIndices: (indices) => set({ visibleImageIndices: indices }),
 
   // Auth actions
