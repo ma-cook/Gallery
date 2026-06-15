@@ -8,7 +8,15 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
   const { camera, gl } = useThree();
   const cameraRef = useRef();
   const controlsRef = useRef();
-  const targetRef = useRef(new THREE.Vector3());
+  const planeWidth = 1200;
+  const planeHeight = 1200;
+  const planeYPosition = -50;
+  const minYPosition = planeYPosition + 2; // 2 units above the whitePlane
+  const CAMERA_DISTANCE = 100;
+  const FAR_DISTANCE = 120;
+  const SCREEN_Y_OFFSET = 50; // Camera looks this far below images, pushing them toward top of screen
+  const initialTargetY = Math.max(minYPosition, scrollYRange.max + (scrollYRange.min - scrollYRange.max) * scrollProgress - SCREEN_Y_OFFSET);
+  const targetRef = useRef(new THREE.Vector3(0, initialTargetY, 0));
   const isMovingRef = useRef(false);
   
   // Track camera velocity for adaptive performance
@@ -30,10 +38,6 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
     },
   }));
 
-  const planeWidth = 1200;
-  const planeHeight = 1200;
-  const planeYPosition = -50;
-  const minYPosition = planeYPosition + 2; // 2 units above the whitePlane
   useEffect(() => {
     if (targetPosition) {
       console.log('CustomCamera: New target position received', targetPosition);
@@ -48,6 +52,7 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
 
   useEffect(() => {
     if (controlsRef.current) {
+      controlsRef.current.target.set(0, initialTargetY, 0);
       controlsRef.current.update();
     }
   }, []);
@@ -61,10 +66,8 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
   const constraintFrameCounter = useRef(0);
 
   // Scroll-based vertical camera movement
-  const scrollYTarget = useRef(0);
-  const scrollCamPos = useRef(new THREE.Vector3());
-  const CAMERA_DISTANCE = 100;
-  const FAR_DISTANCE = 120;
+  const scrollYTarget = useRef(initialTargetY + SCREEN_Y_OFFSET);
+  const scrollCamPos = useRef(new THREE.Vector3().set(0, initialTargetY, CAMERA_DISTANCE));
 
   useFrame((state) => {
     // Calculate camera velocity
@@ -125,6 +128,9 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
         0.08 + easeProgress * 0.25 // Increased responsiveness (was 0.05 + easeProgress * 0.2)
       );
 
+      // Face the clicked image during click animation
+      cameraRef.current.lookAt(targetRef.current);
+
       // Stop moving if the animation is complete
       if (progress >= 1) {
         isMovingRef.current = false;
@@ -143,19 +149,25 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
 
       scrollYTarget.current += (targetY - scrollYTarget.current) * 0.06;
 
+      // Blend offset: full in column view, none in sphere view
+      const offset = SCREEN_Y_OFFSET * (1 - sphereTransition);
+
+      // Clamp target to stay above the ground plane constraint
+      const clampedY = Math.max(minYPosition, scrollYTarget.current - offset);
+
       // Move the camera target (lookAt point) vertically
-      targetRef.current.set(0, scrollYTarget.current, 0);
+      targetRef.current.set(0, clampedY, 0);
 
-      // Move camera position 
-      scrollCamPos.current.set(0, scrollYTarget.current, targetDistance);
-      cameraRef.current.position.lerp(scrollCamPos.current, 0.06);
+      // Move camera position directly (scrollYTarget provides smoothing)
+      scrollCamPos.current.set(0, clampedY, targetDistance);
+      cameraRef.current.position.copy(scrollCamPos.current);
 
-      controlsRef.current.target.lerp(targetRef.current, 0.15);
-      controlsRef.current.update();
+      // Keep camera level during scroll to prevent tilt from position lag
+      cameraRef.current.lookAt(0, cameraRef.current.position.y, 0);
+
+      // Sync OrbitControls target without calling update() to avoid damping jitter
+      controlsRef.current.target.copy(targetRef.current);
     }
-
-    // Always look at the target position
-    cameraRef.current.lookAt(targetRef.current);
 
     // Apply constraints with smoothing, but only every 3 frames for better performance
     constraintFrameCounter.current++;
@@ -191,7 +203,7 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
         fov={70}
         near={0.1}
         far={5000}
-        position={[20, 20, 130]}
+        position={[0, initialTargetY, CAMERA_DISTANCE]}
         aspect={window.innerWidth / window.innerHeight}
       />
       <OrbitControls

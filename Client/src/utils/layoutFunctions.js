@@ -13,16 +13,16 @@ export const calculateSpherePositions = (images, sphereRadius) => {
 
 export const calculateVerticalPositions = (images) => {
   if (images.length === 0) return [];
-  const xPositions = [-50, -17, 17, 50];
+  const xPositions = [-80, -60, 60, 80];
   const ySpacing = 15;
-  const startY = 20;
+  const startY = 100
 
   return images.map((_, index) => {
     const col = index % 4;
     const row = Math.floor(index / 4);
     const x = xPositions[col];
     const y = startY - row * ySpacing;
-    const z = 0;
+    const z = 20;
     return [x, y, z];
   });
 };
