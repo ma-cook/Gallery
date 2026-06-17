@@ -40,13 +40,13 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
 
   useEffect(() => {
     if (targetPosition) {
-      console.log('CustomCamera: New target position received', targetPosition);
       // Copy the target position to our ref
       targetRef.current.copy(targetPosition);
       // Set moving flag to true to start camera animation
       isMovingRef.current = true;
       // Reset animation timing
       startTimeRef.current = 0;
+      modeRef.current = 'animate';
     }
   }, [targetPosition]);
 
@@ -64,6 +64,10 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
   const startTimeRef = useRef(0);
   const animationDurationRef = useRef(600); // milliseconds (was 800)
   const constraintFrameCounter = useRef(0);
+  const modeRef = useRef('scroll'); // 'scroll' | 'animate' | 'viewing' | 'returning'
+  const viewingScrollProgressRef = useRef(scrollProgress);
+  const returnStartPos = useRef(new THREE.Vector3());
+  const returnProgressRef = useRef(0);
 
   // Scroll-based vertical camera movement
   const scrollYTarget = useRef(initialTargetY + SCREEN_Y_OFFSET);
@@ -135,41 +139,72 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
       if (progress >= 1) {
         isMovingRef.current = false;
         startTimeRef.current = 0; // Reset for next animation
+        modeRef.current = 'viewing';
+        viewingScrollProgressRef.current = scrollProgress;
       }
     } else {
-      // Scroll-based vertical movement with sphere transition
+      // Always compute scroll target values
       const { min: scrollMin, max: scrollMax } = scrollYRange;
-
-      // Y position: column scroll, blended toward center (0) as sphere transition progresses
       const columnY = scrollMax + (scrollMin - scrollMax) * scrollProgress;
       const targetY = columnY * (1 - sphereTransition);
-
-      // Distance: CAMERA_DISTANCE in column view, FAR_DISTANCE in sphere view
       const targetDistance = CAMERA_DISTANCE + (FAR_DISTANCE - CAMERA_DISTANCE) * sphereTransition;
 
       scrollYTarget.current += (targetY - scrollYTarget.current) * 0.06;
 
-      // Blend offset: full in column view, none in sphere view
       const offset = SCREEN_Y_OFFSET * (1 - sphereTransition);
-
-      // Clamp target to stay above the ground plane constraint
       const clampedY = Math.max(minYPosition, scrollYTarget.current - offset);
-
-      // Move the camera target (lookAt point) vertically
-      targetRef.current.set(0, clampedY, 0);
-
-      // Move camera position directly (scrollYTarget provides smoothing)
       scrollCamPos.current.set(0, clampedY, targetDistance);
-      cameraRef.current.position.copy(scrollCamPos.current);
 
-      // Keep camera level during scroll to prevent tilt from position lag
-      cameraRef.current.lookAt(0, cameraRef.current.position.y, 0);
+      if (modeRef.current === 'viewing') {
+        // Keep targetRef pointing to the image position (set during animation)
+        // so orbit controls stay anchored to the image
+        if (scrollProgress !== viewingScrollProgressRef.current) {
+          modeRef.current = 'returning';
+          returnStartPos.current.copy(cameraRef.current.position);
+          returnProgressRef.current = 0;
+        }
+      } else {
+        // In returning or scroll mode, update targetRef to the scroll target
+        targetRef.current.set(0, clampedY, 0);
+        if (modeRef.current === 'returning') {
+          returnProgressRef.current += 0.025;
+          const t = Math.min(returnProgressRef.current, 1);
+          const easeT = easeOutCubic(t);
+          cameraRef.current.position.lerpVectors(returnStartPos.current, scrollCamPos.current, easeT);
+          cameraRef.current.lookAt(0, cameraRef.current.position.y, 0);
 
-      // Sync OrbitControls target without calling update() to avoid damping jitter
+          if (t >= 1) {
+            modeRef.current = 'scroll';
+            cameraRef.current.position.copy(scrollCamPos.current);
+          }
+        } else {
+          cameraRef.current.position.copy(scrollCamPos.current);
+          cameraRef.current.lookAt(0, cameraRef.current.position.y, 0);
+        }
+      }
+
       controlsRef.current.target.copy(targetRef.current);
     }
 
     // Apply constraints with smoothing, but only every 3 frames for better performance
+    constraintFrameCounter.current++;
+    if (constraintFrameCounter.current % 3 === 0) { // Apply constraints every 3rd frame
+      const { x, y, z } = cameraRef.current.position;
+      const constrainedX = Math.max(-planeWidth / 2, Math.min(planeWidth / 2, x));
+      const constrainedY = Math.max(minYPosition, y);
+      const constrainedZ = Math.max(
+        -planeHeight / 2,
+        Math.min(planeHeight / 2, z)
+      );
+
+      // Apply constraints with smoothing
+      cameraRef.current.position.x +=
+        (constrainedX - cameraRef.current.position.x) * 0.15;
+      cameraRef.current.position.y +=
+        (constrainedY - cameraRef.current.position.y) * 0.15;
+      cameraRef.current.position.z +=
+        (constrainedZ - cameraRef.current.position.z) * 0.15;
+    }
     constraintFrameCounter.current++;
     if (constraintFrameCounter.current % 3 === 0) { // Apply constraints every 3rd frame
       const { x, y, z } = cameraRef.current.position;
@@ -213,11 +248,10 @@ const CustomCamera = forwardRef(({ targetPosition, cameraOffset = 8, scrollProgr
         enablePan={true}
         enableRotate={true}
         enableDamping={true}
-        dampingFactor={0.05} // Reduced for more responsive control (was 0.1)
+        dampingFactor={0.05}
         rotateSpeed={0.5}
-        // Add performance optimizations
-        maxPolarAngle={Math.PI / 1.75} // Limit rotation to avoid rendering unnecessary areas
-        minPolarAngle={Math.PI / 8} // Prevent going too high up
+        maxPolarAngle={Math.PI / 1.75}
+        minPolarAngle={Math.PI / 8}
       />
     </>
   );

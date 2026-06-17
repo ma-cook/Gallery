@@ -70,6 +70,16 @@ const RaycasterHandler = ({ imagesPositions, handleImageClick }) => {
       raycaster.current.far = 300; // Limit raycasting distance
       raycaster.current.firstHitOnly = true; // Stop at first hit for better performance
       
+      // Refresh cache on click to catch lazy-loaded sprites
+      if (clickableObjects.current.length === 0) {
+        clickableObjects.current = [];
+        scene.traverse((object) => {
+          if (object.userData && object.userData.originalIndex !== undefined) {
+            clickableObjects.current.push(object);
+          }
+        });
+      }
+
       // Use cached clickable objects instead of recursive scene traversal
       const intersects = raycaster.current.intersectObjects(
         clickableObjects.current,

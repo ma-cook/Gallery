@@ -10,7 +10,7 @@ import React, {
 } from 'react';
 import { useFrame, Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { Stats, Environment, Bvh } from '@react-three/drei';
+import { Stats, Environment } from '@react-three/drei';
 import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import CustomCamera from './components/CustomCamera';
 import AuthModal from './components/AuthModal';
@@ -154,7 +154,6 @@ const SceneCanvas = React.memo(({
       <OrbLight glowColor={glowColor} onOrbClick={handleOrbClick} />
       
       <Suspense fallback={<Loader />}>
-        <Bvh firstHitOnly>
           {images.length > 0 &&
             imagesPositions.length > 0 &&
             images.map((image, index) => {
@@ -190,9 +189,8 @@ const SceneCanvas = React.memo(({
                 />
               );
             })}
-        </Bvh>
         <RaycasterHandler
-          images={imagesPositions}
+          imagesPositions={imagesPositions}
           handleImageClick={handleImageClick}
         />
         {images.length > 0 && imagesPositions.length > 0 && (
